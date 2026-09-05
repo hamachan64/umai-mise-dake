@@ -1,35 +1,55 @@
 # うまい店だけ。
 
-自分のオススメ飲食店をジャンル・エリア別にまとめるための、静的1ページサイトです。
-フレームワーク不要、`index.html` を開くだけで動作します。
+自分のオススメ飲食店をジャンル・エリア別にまとめる静的サイトです。
+ビルド不要。`index.html` をブラウザで開くだけで動きます。
+
+## デザイン
+
+`https://henshin-j-horumon.com`（情熱ホルモン「変新」20周年サイト）を下敷きにしています。
+
+| 要素 | 値 |
+| --- | --- |
+| ベース | 白 `#FFFFFF` |
+| ブランドカラー | ターコイズ `#2CC1CC` / `#17A3B2` |
+| アクセント | ホットピンク `#FE1958` |
+| 面のカラー | クリーム `#F8F1E4`（方眼テクスチャ） |
+| 見出し | Zen Kaku Gothic New 900 |
+| 手書き | Caveat 700 |
+| 欧文ラベル | Montserrat（大文字＋広めのトラッキング） |
+| 本文 | Noto Sans JP |
+
+デザインの効かせどころ:
+
+- 白地に切り抜き（絵文字）をふわふわ浮遊させたヒーロー
+- ターコイズのしずくバッジ（参考サイトの20周年マーク相当）
+- 大きな角丸パネル・円形マスク・アーチ（見開き本）型のセクション区切り
+- ティール地に白抜きのハイライトボックス見出し
+- 細枠のピルボタン、スクロール連動のフェードイン
 
 ## 使い方
 
 1. `index.html` をブラウザで開いて確認する
-2. お店を追加・編集するときは `index.html` 内の `<script>` 内、
-   `const SHOPS = [...]` の配列を書き換える
-3. 新しいジャンルを追加したときは、同じく `<script>` 内の
-   `const GENRES = {...}` に色とオノマトペを追加する
-
-## 公開方法（GitHub Pages の例）
-
-1. GitHub 上に新しいリポジトリを作成する（README なしで作成）
-2. このフォルダの中で以下を実行する
-
-   ```bash
-   git remote add origin git@github.com:<ユーザー名>/<リポジトリ名>.git
-   git branch -M main
-   git push -u origin main
-   ```
-
-3. GitHubのリポジトリ → Settings → Pages で
-   Branch を `main` / `/(root)` に設定して保存する
-4. 数分後に `https://<ユーザー名>.github.io/<リポジトリ名>/` で公開される
+2. お店を追加・編集するときは `assets/data/shops.js` の `SHOPS` 配列を書き換える
+3. 新しいジャンルを追加したときは、同ファイルの `GENRES` に絵文字とオノマトペを追加する
+4. 写真を載せたい店は `photo` に画像パス（例 `"assets/img/marutama.jpg"`）を入れる。
+   空のままなら絵文字のビジュアルが使われる
 
 ## ファイル構成
 
 ```
 .
-├── index.html   # サイト本体（HTML/CSS/JSすべて1ファイル）
+├── index.html                # マークアップのみ
+├── assets/
+│   ├── css/style.css         # デザイン
+│   ├── js/main.js            # 描画・絞り込み・モーダル
+│   └── data/shops.js         # ★お店データ（ここだけ触れば運用できる）
 └── README.md
 ```
+
+HTML / CSS / JS / データを分けています。JSON ではなく `.js` にしているのは、
+ローカルサーバーを立てずに `file://` で開いても動くようにするためです。
+
+## 公開（GitHub Pages）
+
+リポジトリの Settings → Pages で、Branch を `master` / `/(root)` に設定して保存。
+数分後に `https://hamachan64.github.io/umai-mise-dake/` で公開されます。

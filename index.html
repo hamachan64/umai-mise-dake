@@ -5,547 +5,198 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>うまい店だけ。｜わたしのオススメ飲食店</title>
 <meta name="description" content="実際に通って、また行きたくなった店だけ。ジャンルとエリアで絞り込めます。">
+<meta property="og:title" content="うまい店だけ。｜わたしのオススメ飲食店">
+<meta property="og:description" content="実際に通って、また行きたくなった店だけ。ジャンルとエリアで絞り込めます。">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
-<style>
-:root{
-  --cream:#FFF3E2;
-  --cream-2:#FFE7C7;
-  --ink:#241A15;
-  --red:#E8352A;
-  --pink:#FF7BA3;
-  --yellow:#FFC629;
-  --blue:#3E8FE0;
-  --green:#2FA36B;
-
-  --display:"Dela Gothic One", system-ui, sans-serif;
-  --body:"Zen Maru Gothic", system-ui, sans-serif;
-  --util:"Bebas Neue", sans-serif;
-  --maxw:1160px;
-}
-*,*::before,*::after{box-sizing:border-box}
-body{
-  margin:0;background:var(--cream);color:var(--ink);
-  font-family:var(--body);font-weight:500;line-height:1.85;
-  overflow-x:hidden;-webkit-font-smoothing:antialiased;
-}
-img{max-width:100%;display:block}
-button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
-:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
-.wrap{width:min(100% - 36px, var(--maxw));margin-inline:auto}
-
-/* ============ ローディング（箸クラップ） ============ */
-#loader{
-  position:fixed;inset:0;z-index:999;background:var(--yellow);
-  display:grid;place-content:center;justify-items:center;gap:26px;
-  transition:opacity .5s ease, visibility .5s;
-}
-#loader.done{opacity:0;visibility:hidden}
-.chopsticks{position:relative;width:120px;height:120px}
-.chopsticks i{
-  position:absolute;left:52px;bottom:8px;width:15px;height:104px;
-  background:var(--ink);border-radius:8px;transform-origin:50% 100%;
-}
-.chopsticks i:nth-child(1){animation:clapL .55s ease-in-out infinite}
-.chopsticks i:nth-child(2){animation:clapR .55s ease-in-out infinite}
-@keyframes clapL{0%,100%{transform:rotate(-22deg)}50%{transform:rotate(-3deg)}}
-@keyframes clapR{0%,100%{transform:rotate(22deg)}50%{transform:rotate(3deg)}}
-.clap{
-  position:absolute;top:-6px;left:50%;transform:translateX(-50%);
-  font-family:var(--display);font-size:20px;color:var(--red);
-  animation:clapPop .55s ease-in-out infinite;
-}
-@keyframes clapPop{0%,100%{opacity:0;transform:translate(-50%,4px) scale(.7)}45%{opacity:1;transform:translate(-50%,-10px) scale(1.1)}}
-.loading-word{display:flex;gap:2px;font-family:var(--display);font-size:26px}
-.loading-word span{animation:hop .8s ease-in-out infinite}
-
-/* ============ ヘッダー ============ */
-header.bar{
-  position:sticky;top:0;z-index:60;background:var(--cream);
-  border-bottom:3px solid var(--ink);
-}
-header.bar .wrap{display:flex;align-items:center;justify-content:space-between;min-height:60px;gap:12px}
-.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
-.logo b{font-family:var(--display);font-weight:400;font-size:19px;letter-spacing:.02em}
-.logo small{display:block;font-family:var(--util);font-size:11px;letter-spacing:.2em;line-height:1;color:#9A8778}
-.logo:hover .blob{animation-duration:1.4s}
-.bar-note{font-family:var(--util);font-size:15px;letter-spacing:.14em;color:#9A8778}
-
-/* ============ ブロブ（食感キャラ） ============ */
-.blob{
-  position:relative;flex:none;
-  animation:morph 7s ease-in-out infinite;
-  display:grid;place-items:center;
-}
-@keyframes morph{
-  0%,100%{border-radius:58% 42% 47% 53% / 52% 45% 55% 48%}
-  33%{border-radius:44% 56% 63% 37% / 41% 59% 41% 59%}
-  66%{border-radius:53% 47% 36% 64% / 62% 37% 63% 38%}
-}
-.blob .face{position:absolute;top:38%;display:flex;gap:.28em;align-items:center}
-.blob .eye{width:.17em;height:.24em;background:var(--ink);border-radius:50%;animation:blink 4.5s infinite}
-.blob .mouth{
-  position:absolute;top:64%;left:50%;transform:translateX(-50%);
-  width:.34em;height:.18em;background:var(--ink);
-  border-radius:0 0 100px 100px;
-}
-@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
-
-/* ============ ヒーロー ============ */
-.hero{position:relative;padding:70px 0 84px;overflow:hidden}
-.hero .float{position:absolute;pointer-events:none;user-select:none;z-index:0}
-.hero .float.b{opacity:.9}
-.hero .onoma{
-  font-family:var(--display);font-size:clamp(13px,2.2vw,20px);
-  color:var(--ink);background:#fff;border:2.5px solid var(--ink);
-  padding:2px 12px;border-radius:999px;white-space:nowrap;
-  box-shadow:3px 3px 0 var(--ink);
-}
-@keyframes bob{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-18px) rotate(calc(var(--r,0deg) + 4deg))}}
-.hero .inner{position:relative;z-index:2}
-.eyebrow{
-  display:inline-flex;align-items:center;gap:10px;
-  font-family:var(--util);font-size:14px;letter-spacing:.26em;
-  background:var(--red);color:#fff;padding:4px 16px;border-radius:999px;
-  border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);margin:0 0 24px;
-}
-h1.big{
-  font-family:var(--display);font-weight:400;
-  font-size:clamp(33px,7vw,72px);line-height:1.26;margin:0 0 24px;
-}
-h1.big span{display:inline-block;animation:dropIn .6s backwards cubic-bezier(.2,1.4,.4,1)}
-h1.big .p{color:var(--red);position:relative}
-h1.big .p::after{
-  content:"";position:absolute;left:0;right:0;bottom:.06em;height:.14em;
-  background:var(--yellow);z-index:-1;border-radius:99px;
-}
-@keyframes dropIn{from{opacity:0;transform:translateY(-32px) rotate(-8deg)}to{opacity:1;transform:none}}
-.lead{max-width:34em;font-size:15.5px;margin:0 0 32px}
-.stats{display:flex;gap:12px;flex-wrap:wrap}
-.stats div{
-  background:#fff;border:3px solid var(--ink);border-radius:18px;
-  padding:10px 20px;box-shadow:5px 5px 0 var(--ink);
-  transition:transform .2s;
-}
-.stats div:hover{transform:translate(-2px,-2px) rotate(-2deg)}
-.stats b{display:block;font-family:var(--util);font-size:34px;line-height:1;color:var(--red)}
-.stats small{font-size:11.5px;letter-spacing:.1em}
-
-/* ============ マーキー ============ */
-.marquee{
-  background:var(--red);color:#fff;border-block:3px solid var(--ink);
-  overflow:hidden;padding:11px 0;display:flex;
-}
-.marquee ul{display:flex;gap:34px;margin:0;padding:0 17px 0 0;list-style:none;flex:none;animation:slide 22s linear infinite}
-.marquee li{font-family:var(--display);font-size:17px;white-space:nowrap}
-.marquee li::after{content:"●";margin-left:34px;font-size:9px;vertical-align:middle;color:var(--yellow)}
-@keyframes slide{to{transform:translateX(-100%)}}
-
-/* ============ 絞り込み ============ */
-.filters{position:sticky;top:60px;z-index:50;background:var(--cream-2);border-bottom:3px solid var(--ink)}
-.frow{display:flex;gap:12px;align-items:flex-start;padding:11px 0}
-.frow + .frow{border-top:2px dashed rgba(36,26,21,.3)}
-.flabel{flex:none;width:78px;padding-top:5px;font-family:var(--display);font-size:12.5px}
-.chips{display:flex;flex-wrap:wrap;gap:7px}
-.chip{
-  border:2.5px solid var(--ink);background:#fff;border-radius:999px;
-  padding:4px 14px;font-size:13px;font-weight:700;
-  box-shadow:2px 2px 0 var(--ink);
-  transition:transform .16s cubic-bezier(.2,1.5,.4,1), background .16s, color .16s, box-shadow .16s;
-}
-.chip:hover{transform:translateY(-2px) rotate(-2deg)}
-.chip:active{transform:translateY(1px);box-shadow:0 0 0 var(--ink)}
-.chip[aria-pressed="true"]{background:var(--ink);color:var(--cream);box-shadow:2px 2px 0 var(--red)}
-.chip .n{font-family:var(--util);font-size:12px;opacity:.6;margin-left:6px}
-
-/* ============ 一覧 ============ */
-.list-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:38px 0 16px}
-.list-head h2{font-family:var(--display);font-weight:400;font-size:21px;margin:0;display:flex;align-items:center;gap:9px}
-.count{font-family:var(--util);font-size:15px;letter-spacing:.12em;color:#9A8778}
-.count em{font-style:normal;font-size:27px;color:var(--red)}
-.grid{display:grid;gap:24px;padding-bottom:90px;grid-template-columns:repeat(auto-fill,minmax(268px,1fr))}
-
-.card{
-  position:relative;text-align:left;display:flex;flex-direction:column;
-  background:#fff;border:3px solid var(--ink);border-radius:22px;
-  box-shadow:7px 7px 0 var(--ink);overflow:hidden;
-  opacity:0;transform:translateY(26px) rotate(-1.5deg);
-  transition:transform .22s cubic-bezier(.2,1.3,.4,1), box-shadow .22s, opacity .45s;
-}
-.card.in{opacity:1;transform:none}
-.card:hover{transform:translate(-4px,-6px) rotate(1deg);box-shadow:11px 13px 0 var(--red)}
-.card:hover .blob{animation-duration:2s}
-.card:hover .onoma-tag{transform:rotate(-6deg) scale(1.08)}
-
-.visual{position:relative;height:158px;display:grid;place-items:center;border-bottom:3px solid var(--ink);overflow:hidden}
-.visual img{width:100%;height:100%;object-fit:cover}
-.visual .dots{position:absolute;inset:0;opacity:.28;
-  background-image:radial-gradient(rgba(255,255,255,.9) 2.5px, transparent 2.6px);
-  background-size:17px 17px;}
-.visual .blob{width:104px;height:104px;font-size:100px;z-index:1;animation:morph 7s ease-in-out infinite, floaty 4.5s ease-in-out infinite}
-@keyframes floaty{0%,100%{translate:0 0}50%{translate:0 -9px}}
-.onoma-tag{
-  position:absolute;right:9px;bottom:9px;z-index:2;
-  font-family:var(--display);font-size:12.5px;
-  background:#fff;border:2.5px solid var(--ink);border-radius:999px;
-  padding:1px 11px;box-shadow:2px 2px 0 var(--ink);
-  transform:rotate(-3deg);transition:transform .22s cubic-bezier(.2,1.5,.4,1);
-}
-.score{
-  position:absolute;left:9px;top:9px;z-index:2;
-  background:var(--ink);color:var(--yellow);border-radius:999px;
-  padding:1px 10px;font-family:var(--util);font-size:14px;letter-spacing:.08em;
-}
-.cbody{padding:17px 16px 15px;display:flex;flex-direction:column;gap:8px;flex:1}
-.cbody h3{font-family:var(--display);font-weight:400;font-size:18.5px;line-height:1.45;margin:0}
-.tags{display:flex;flex-wrap:wrap;gap:5px}
-.tag{font-size:11px;font-weight:700;padding:1px 10px;border:2px solid var(--ink);border-radius:999px}
-.tag.area{background:var(--ink);color:var(--cream)}
-.memo{font-size:13.5px;line-height:1.8;margin:0}
-.meta{margin-top:auto;padding-top:10px;border-top:2px dotted rgba(36,26,21,.3);display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#8C7A6C}
-.meta b{font-family:var(--util);font-size:15px;color:var(--ink);letter-spacing:.05em}
-
-.empty{grid-column:1/-1;text-align:center;padding:64px 20px;border:3px dashed rgba(36,26,21,.35);border-radius:24px}
-.empty p{font-family:var(--display);font-size:18px;margin:14px 0 4px}
-
-/* ============ 詳細 ============ */
-.modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:18px}
-.modal.open{display:flex}
-.mbg{position:absolute;inset:0;background:rgba(36,26,21,.72)}
-.mcard{
-  position:relative;width:min(540px,100%);max-height:88vh;overflow:auto;
-  background:var(--cream);border:3px solid var(--ink);border-radius:24px;
-  box-shadow:10px 10px 0 var(--red);
-  animation:dropIn .32s cubic-bezier(.2,1.3,.4,1);
-}
-.mtop{padding:24px 24px 20px;display:flex;gap:16px;align-items:center;border-bottom:3px solid var(--ink)}
-.mtop .blob{width:74px;height:74px;font-size:72px}
-.mtop h3{font-family:var(--display);font-weight:400;font-size:23px;margin:0;line-height:1.35}
-.mtop .yomi{font-family:var(--util);font-size:12px;letter-spacing:.18em;color:#9A8778}
-.mbody{padding:20px 24px 26px;display:flex;flex-direction:column;gap:16px}
-.mbody .lead2{font-size:14.5px;margin:0}
-dl.spec{display:grid;grid-template-columns:82px 1fr;gap:8px 14px;margin:0;font-size:13.5px}
-dl.spec dt{font-family:var(--display);font-size:11.5px;padding-top:3px}
-dl.spec dd{margin:0}
-.mapbtn{
-  align-self:flex-start;text-decoration:none;font-weight:700;font-size:13.5px;
-  background:var(--yellow);border:3px solid var(--ink);border-radius:999px;
-  padding:9px 22px;box-shadow:4px 4px 0 var(--ink);transition:transform .16s, box-shadow .16s;
-}
-.mapbtn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
-.mclose{
-  position:absolute;top:12px;right:12px;z-index:3;width:38px;height:38px;
-  border-radius:50%;border:3px solid var(--ink);background:#fff;font-size:16px;
-  box-shadow:2px 2px 0 var(--ink);transition:transform .16s}
-.mclose:hover{transform:rotate(90deg)}
-
-footer{background:var(--ink);color:var(--cream-2);padding:34px 0;font-size:12.5px}
-footer .wrap{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
-footer b{font-family:var(--display);font-weight:400;color:#fff}
-
-@keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-11px)}}
-
-@media (max-width:640px){
-  header.bar .wrap{min-height:54px}
-  .filters{top:54px}
-  .bar-note{display:none}
-  .hero{padding:46px 0 58px}
-  .frow{flex-wrap:wrap}
-  .flabel{width:100%;padding-top:0}
-  .grid{grid-template-columns:1fr}
-  .hero .float.b{display:none}
-}
-@media (prefers-reduced-motion:reduce){
-  *{animation:none !important;transition-duration:.01ms !important}
-  .card{opacity:1;transform:none}
-}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Caveat:wght@700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
+<!-- ============ ローディング ============ -->
 <div id="loader">
-  <div class="chopsticks"><span class="clap">パチ</span><i></i><i></i></div>
+  <svg class="drop" viewBox="0 0 200 226" aria-hidden="true">
+    <path d="M100 4 C138 62 180 100 180 140 a80 80 0 1 1 -160 0 c0 -40 42 -78 80 -136 z" fill="#2CC1CC"/>
+    <text x="100" y="158" text-anchor="middle" font-size="52">🔥</text>
+  </svg>
   <div class="loading-word" id="loadWord"></div>
 </div>
 
+<!-- ============ ソーシャルレール ============ -->
+<div class="rail" aria-hidden="true">
+  <span>FOLLOW</span>
+  <a href="#" aria-label="Instagram">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+      <rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4"/>
+      <circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/>
+    </svg>
+  </a>
+  <a href="#" aria-label="X">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+      <path d="M4.5 4.5 19.5 19.5M19.5 4.5 4.5 19.5"/>
+    </svg>
+  </a>
+</div>
+
+<!-- ============ ヘッダー ============ -->
 <header class="bar">
   <div class="wrap">
     <a class="logo" href="#top">
-      <span class="blob" style="width:32px;height:32px;font-size:30px;background:var(--red)">
-        <span class="face"><span class="eye"></span><span class="eye"></span></span><span class="mouth"></span>
-      </span>
+      <svg class="mark" viewBox="0 0 200 226" aria-hidden="true">
+        <path d="M100 4 C138 62 180 100 180 140 a80 80 0 1 1 -160 0 c0 -40 42 -78 80 -136 z" fill="#2CC1CC"/>
+        <circle cx="75" cy="132" r="9" fill="#fff"/><circle cx="125" cy="132" r="9" fill="#fff"/>
+        <path d="M76 166 q24 22 48 0" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
+      </svg>
       <span><b>うまい店だけ。</b><small>ONLY THE GOOD ONES</small></span>
     </a>
-    <span class="bar-note">TOTAL <span id="barTotal">0</span> SHOPS</span>
+    <nav class="gnav">
+      <a href="#about">ABOUT</a>
+      <a href="#list">LIST</a>
+      <a href="#zukan">GENRE</a>
+    </nav>
+    <div class="bar-cta">
+      <a class="pill teal" href="#filters">
+        店を探す
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/>
+        </svg>
+      </a>
+      <button type="button" class="pill pink" data-random>今日の一軒</button>
+    </div>
   </div>
 </header>
 
+<!-- ============ ヒーロー ============ -->
 <section class="hero" id="top">
+  <div class="cutouts" id="cutouts" aria-hidden="true"></div>
   <div class="wrap inner">
-    <p class="eyebrow">MY FAVORITE RESTAURANTS</p>
-    <h1 class="big" id="h1"></h1>
-    <p class="lead">自分の足で通って、人にすすめたくなった店だけを並べています。<br>ジャンルとエリアで絞り込んで、今日の一軒を決めてください。</p>
+
+    <svg class="drop-badge" viewBox="0 0 200 226" role="img" aria-label="オススメの店リスト">
+      <path d="M100 4 C138 62 180 100 180 140 a80 80 0 1 1 -160 0 c0 -40 42 -78 80 -136 z" fill="#2CC1CC"/>
+      <text x="100" y="102" text-anchor="middle" fill="#fff" font-family="Montserrat, sans-serif"
+            font-weight="700" font-size="8" letter-spacing="1.4">ONLY THE GOOD ONES</text>
+      <text x="100" y="128" text-anchor="middle" font-size="24">🔥</text>
+      <text id="dropNum" x="100" y="176" text-anchor="middle" fill="#fff" font-family="Montserrat, sans-serif"
+            font-weight="800" font-size="44" letter-spacing="-1">0</text>
+      <text x="100" y="192" text-anchor="middle" fill="#fff" font-family="Montserrat, sans-serif"
+            font-weight="700" font-size="7.5" letter-spacing="1.9" opacity=".9">SHOPS SELECTED</text>
+    </svg>
+
+    <h1 id="h1"></h1>
+    <p class="sub">自分の足で通って、人にすすめたくなった店だけ。</p>
+
     <div class="stats">
-      <div><b data-count="0" id="s1">0</b><small>軒のオススメ</small></div>
-      <div><b data-count="0" id="s2">0</b><small>ジャンル</small></div>
-      <div><b data-count="0" id="s3">0</b><small>エリア</small></div>
+      <div><b id="s1">0</b><small>Shops</small></div>
+      <div><b id="s2">0</b><small>Genres</small></div>
+      <div><b id="s3">0</b><small>Areas</small></div>
+    </div>
+
+    <a class="scroll-cue" href="#about"><span>SCROLL</span><i></i></a>
+  </div>
+</section>
+
+<!-- ============ キービジュアル ============ -->
+<section class="kv" id="about">
+  <div class="wrap">
+    <div class="kv-inner reveal">
+      <div class="kv-photo">
+        <span class="big">🍽</span>
+        <svg class="kv-swoosh" viewBox="0 0 200 120" aria-hidden="true">
+          <path d="M8 8C8 70 60 108 130 108c46 0 66-24 66-48" fill="none"
+                stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".9"/>
+        </svg>
+      </div>
+      <div class="kv-text">
+        <p class="script">Tasty Days!</p>
+        <h2>うまい店は、<span class="hl-box">誰かに言いたく</span>なる。</h2>
+        <p>食べログの点数でも、行列の長さでもなく、「自分がまた行った店」だけを並べたリストです。</p>
+        <p>ジャンルとエリアで絞り込めるので、今日の一軒はここで決めてください。ハズレはありません。</p>
+        <button type="button" class="pill ghost" data-random>ランダムで1軒選ぶ →</button>
+      </div>
     </div>
   </div>
 </section>
 
+<!-- ============ マーキー ============ -->
 <div class="marquee" aria-hidden="true"><ul id="mq1"></ul><ul id="mq2"></ul></div>
 
-<nav class="filters" aria-label="絞り込み">
+<!-- ============ 絞り込み ============ -->
+<nav class="filters" id="filters" aria-label="絞り込み">
   <div class="wrap">
-    <div class="frow"><div class="flabel">ジャンル</div><div class="chips" id="genreChips"></div></div>
-    <div class="frow"><div class="flabel">エリア</div><div class="chips" id="areaChips"></div></div>
+    <div class="frow"><div class="flabel">Genre</div><div class="chips" id="genreChips"></div></div>
+    <div class="frow"><div class="flabel">Area</div><div class="chips" id="areaChips"></div></div>
   </div>
 </nav>
 
-<main class="wrap">
+<!-- ============ 一覧 ============ -->
+<main class="wrap" id="list">
   <div class="list-head">
-    <h2>オススメ一覧</h2>
+    <div>
+      <p class="label">Recommended</p>
+      <h2 class="h-jp">オススメ一覧</h2>
+    </div>
     <div class="count"><em id="shown">0</em> / <span id="total">0</span> SHOPS</div>
   </div>
   <div class="grid" id="grid" aria-live="polite"></div>
 </main>
 
+<!-- ============ ジャンル図鑑 ============ -->
+<div class="arch" aria-hidden="true"><span></span><span></span></div>
+<section class="zukan" id="zukan">
+  <div class="wrap">
+    <div class="title reveal">
+      <span class="script">Genre Book</span>
+      <small>ジャンル図鑑</small>
+    </div>
+    <p class="lead reveal">ちょっと「変」わった切り口で、ジャンルから探す。<br>とにかく口の中がたのしいのだ。</p>
+    <ul class="zlist reveal" id="zlist"></ul>
+    <a class="pill" href="#list">一覧をすべて見る →</a>
+  </div>
+</section>
+
+<!-- ============ フッター ============ -->
 <footer>
   <div class="wrap">
-    <span><b>うまい店だけ。</b>　個人が食べて回った記録です。</span>
-    <span>最終更新 2026.08</span>
+    <span class="fl">
+      <svg class="mark" width="26" viewBox="0 0 200 226" aria-hidden="true">
+        <path d="M100 4 C138 62 180 100 180 140 a80 80 0 1 1 -160 0 c0 -40 42 -78 80 -136 z" fill="#2CC1CC"/>
+      </svg>
+      <span><b>うまい店だけ。</b>　個人が食べて回った記録です。</span>
+    </span>
+    <span class="fr">LAST UPDATED 2026.09</span>
   </div>
 </footer>
 
+<!-- ============ 詳細モーダル ============ -->
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mName">
   <div class="mbg" data-close></div>
   <div class="mcard">
-    <button class="mclose" data-close aria-label="閉じる">✕</button>
+    <button type="button" class="mclose" data-close aria-label="閉じる">✕</button>
     <div class="mtop">
-      <span id="mBlob"></span>
-      <span><h3 id="mName"></h3><span class="yomi" id="mYomi"></span></span>
+      <span class="big" id="mIcon"></span>
+      <span>
+        <h3 id="mName"></h3>
+        <span class="yomi" id="mYomi"></span>
+      </span>
     </div>
     <div class="mbody">
       <p class="lead2" id="mMemo"></p>
       <dl class="spec">
-        <dt>ジャンル</dt><dd id="mGenre"></dd>
-        <dt>エリア</dt><dd id="mArea"></dd>
-        <dt>最寄り</dt><dd id="mAccess"></dd>
-        <dt>予算</dt><dd id="mBudget"></dd>
-        <dt>これ頼む</dt><dd id="mDish"></dd>
-        <dt>推し度</dt><dd id="mScore"></dd>
+        <dt>Genre</dt><dd id="mGenre"></dd>
+        <dt>Area</dt><dd id="mArea"></dd>
+        <dt>Access</dt><dd id="mAccess"></dd>
+        <dt>Budget</dt><dd id="mBudget"></dd>
+        <dt>Order</dt><dd id="mDish"></dd>
+        <dt>Score</dt><dd id="mScore"></dd>
       </dl>
-      <a class="mapbtn" id="mMap" href="#" target="_blank" rel="noopener">地図で開く →</a>
+      <a class="pill teal" id="mMap" href="#" target="_blank" rel="noopener">地図で開く →</a>
     </div>
   </div>
 </div>
 
-<script>
-/* =====================================================================
-   ▼ ここだけ書き換えれば自分のリストになります
-   ===================================================================== */
-const SHOPS = [
-  {name:"焼肉 まる玉",      yomi:"MARUTAMA",   genre:"焼肉・ホルモン", area:"新橋",   access:"新橋駅 烏森口 3分", budget:"¥5,000〜",  dish:"上ミノとハラミ",  score:5, photo:"", memo:"ミノのゴリッとした食感が忘れられず月イチで通っています。換気の悪さすら味のうち。"},
-  {name:"ホルモン酒場 炎助", yomi:"ENSUKE",     genre:"焼肉・ホルモン", area:"中目黒", access:"中目黒駅 5分",     budget:"¥4,000〜",  dish:"シマチョウ塩",    score:4, photo:"", memo:"ひとりでカウンターに座れる焼肉。タレが甘すぎず、ビールが止まりません。"},
-  {name:"鮨 とこしえ",       yomi:"TOKOSHIE",   genre:"寿司",           area:"銀座",   access:"銀座一丁目駅 2分", budget:"¥15,000〜", dish:"コハダ",          score:5, photo:"", memo:"記念日はここ。無言で握ってくれる感じが心地よく、コハダで実力がわかります。"},
-  {name:"立ち食い鮨 やぐら", yomi:"YAGURA",     genre:"寿司",           area:"新宿",   access:"新宿三丁目駅 4分", budget:"¥3,000〜",  dish:"日替わり5貫",     score:4, photo:"", memo:"20分で満足して帰れる寿司。この価格でネタの鮮度がおかしい。"},
-  {name:"中華そば 木戸",     yomi:"KIDO",       genre:"ラーメン",       area:"神保町", access:"神保町駅 A5すぐ",  budget:"〜¥1,500",  dish:"中華そば＋味玉",  score:5, photo:"", memo:"煮干しの立った清湯。二日酔いの朝でも最後まで飲み干せるやさしさ。"},
-  {name:"らーめん 轟屋",     yomi:"TODOROKIYA", genre:"ラーメン",       area:"吉祥寺", access:"吉祥寺駅 北口 6分", budget:"〜¥1,500",  dish:"味噌バター",      score:4, photo:"", memo:"冬に食べたい濃厚味噌。茹で加減を聞いてくれるので必ず固めで。"},
-  {name:"居酒屋 のらり",     yomi:"NORARI",     genre:"居酒屋",         area:"新宿",   access:"新宿駅 西口 7分",  budget:"¥3,500〜",  dish:"刺身の盛り合わせ", score:4, photo:"", memo:"3人以上で行きたい店。日本酒が渋くて、店主に任せると外れません。"},
-  {name:"大衆酒場 とめ吉",   yomi:"TOMEKICHI",  genre:"居酒屋",         area:"新橋",   access:"新橋駅 2分",       budget:"¥2,500〜",  dish:"煮込み",          score:3, photo:"", memo:"安い、早い、うるさい。仕事帰りの一杯目にちょうどいい雑さ。"},
-  {name:"カリー食堂 ひなた", yomi:"HINATA",     genre:"カレー",         area:"渋谷",   access:"渋谷駅 8分",       budget:"〜¥1,800",  dish:"2種あいがけ",     score:5, photo:"", memo:"副菜まで手を抜いてなくて、混ぜるほどおいしくなるタイプのスパイスカレー。"},
-  {name:"欧風カレー 石畳",   yomi:"ISHIDATAMI", genre:"カレー",         area:"神保町", access:"神保町駅 3分",     budget:"〜¥2,000",  dish:"ビーフカレー辛口", score:4, photo:"", memo:"神保町らしい古き良き欧風。ルーが重いので昼は軽めにしておくこと。"},
-  {name:"トラットリア 灯",   yomi:"AKARI",      genre:"イタリアン",     area:"中目黒", access:"中目黒駅 4分",     budget:"¥6,000〜",  dish:"手打ちタリアテッレ", score:5, photo:"", memo:"デートで失敗しない一軒。パスタは必ず手打ちを頼んでください。"},
-  {name:"喫茶 ゆのま",       yomi:"YUNOMA",     genre:"喫茶・カフェ",   area:"吉祥寺", access:"吉祥寺駅 南口 5分", budget:"〜¥1,200",  dish:"ブレンドとプリン", score:4, photo:"", memo:"昼下がりに本を持っていく店。プリンが固めで、この硬さが好きな人にはたまらない。"}
-];
-
-/* ジャンル＝色・食感オノマトペ。増やすときはここにも追加 */
-const GENRES = {
-  "焼肉・ホルモン":{c:"#E8352A", o:"ジュージュー"},
-  "寿司":          {c:"#3E8FE0", o:"ぷりっ"},
-  "ラーメン":      {c:"#FFC629", o:"ズルッ"},
-  "居酒屋":        {c:"#2FA36B", o:"ぷはー"},
-  "カレー":        {c:"#F2762E", o:"ピリッ"},
-  "イタリアン":    {c:"#B95CD6", o:"もちっ"},
-  "中華":          {c:"#E8356F", o:"パラッ"},
-  "喫茶・カフェ":  {c:"#8A6A4F", o:"ほっ"}
-};
-/* ▲ 書き換えるのはここまで */
-
-const $ = s => document.querySelector(s);
-const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const state = {genre:"all", area:"all"};
-const genres = [...new Set(SHOPS.map(s=>s.genre))];
-const areas  = [...new Set(SHOPS.map(s=>s.area))];
-
-/* ---- ローディング ---- */
-(function(){
-  const w = "たべにいこう";
-  $("#loadWord").innerHTML = [...w].map((c,i)=>
-    `<span style="animation-delay:${i*80}ms">${c}</span>`).join("");
-  const hide = ()=> $("#loader").classList.add("done");
-  if(reduce) hide();
-  else setTimeout(hide, 1900);
-})();
-
-/* ---- 見出しを1文字ずつ ---- */
-(function(){
-  const parts = [["また行きたい店、",0],["ぜんぶ",1],["ここに。",0]];
-  let i = 0, html = "";
-  parts.forEach(([t,hl])=>{
-    const chars = [...t].map(c=>`<span style="animation-delay:${(i++)*55+900}ms">${c}</span>`).join("");
-    html += hl ? `<span class="p">${chars}</span>` : chars;
-  });
-  html = html.replace("店、","店、<br>");
-  $("#h1").innerHTML = html;
-})();
-
-/* ---- ヒーローに浮かぶキャラとオノマトペ ---- */
-(function(){
-  const hero = $(".hero");
-  const spots = [
-    {t:8,  l:72, s:78, g:0}, {t:52, l:84, s:56, g:2},
-    {t:22, l:92, s:44, g:4}, {t:70, l:64, s:40, g:6}
-  ];
-  spots.forEach((p,i)=>{
-    const g = GENRES[genres[p.g % genres.length]];
-    const d = document.createElement("div");
-    d.className = "float b";
-    d.style.cssText = `top:${p.t}%;left:${p.l}%;--r:${i%2?6:-8}deg;animation:bob ${4+i*.7}s ease-in-out infinite;animation-delay:${i*.4}s`;
-    d.innerHTML = blobHTML(g.c, p.s);
-    hero.appendChild(d);
-  });
-  [["コリコリ",14,4],["ぷりぷり",76,10],["もちもち",40,88],["ジュワッ",90,52]].forEach(([w,t,l],i)=>{
-    const d = document.createElement("div");
-    d.className = "float";
-    d.innerHTML = `<span class="onoma">${w}</span>`;
-    d.style.cssText = `top:${t}%;left:${l}%;--r:${i%2?-7:5}deg;animation:bob ${5+i*.6}s ease-in-out infinite;animation-delay:${i*.5}s;opacity:.95`;
-    hero.appendChild(d);
-  });
-})();
-
-function blobHTML(color, size){
-  return `<span class="blob" style="width:${size}px;height:${size}px;font-size:${size}px;background:${color}">
-    <span class="face"><span class="eye"></span><span class="eye"></span></span><span class="mouth"></span></span>`;
-}
-
-/* ---- 数字カウントアップ ---- */
-function countUp(el, target){
-  if(reduce){ el.textContent = target; return; }
-  let n = 0;
-  const step = ()=>{
-    n += Math.ceil((target - n)/6) || 1;
-    if(n >= target){ el.textContent = target; return; }
-    el.textContent = n; requestAnimationFrame(step);
-  };
-  setTimeout(step, 600);
-}
-countUp($("#s1"), SHOPS.length);
-countUp($("#s2"), genres.length);
-countUp($("#s3"), areas.length);
-$("#barTotal").textContent = SHOPS.length;
-$("#total").textContent = SHOPS.length;
-
-/* ---- マーキー ---- */
-(function(){
-  const words = ["うまい店だけ", "また行きたい", "ONLY THE GOOD ONES", "ジャンルで探す", "エリアで探す", "今日どこ行く？"];
-  const html = words.map(w=>`<li>${w}</li>`).join("");
-  $("#mq1").innerHTML = html; $("#mq2").innerHTML = html;
-})();
-
-/* ---- チップ ---- */
-function chips(el, key, vals, cls){
-  el.innerHTML = [["all","すべて"], ...vals.map(v=>[v,v])].map(([v,l])=>{
-    const n = v==="all" ? SHOPS.length : SHOPS.filter(s=>s[key]===v).length;
-    return `<button class="chip ${cls}" data-key="${key}" data-val="${v}" aria-pressed="${v==="all"}">${l}<span class="n">${n}</span></button>`;
-  }).join("");
-}
-chips($("#genreChips"),"genre",genres,"is-genre");
-chips($("#areaChips"),"area",areas,"is-area");
-document.querySelectorAll(".chip").forEach(b=>b.addEventListener("click",()=>{
-  state[b.dataset.key] = b.dataset.val;
-  b.parentElement.querySelectorAll(".chip").forEach(x=>
-    x.setAttribute("aria-pressed", String(x.dataset.val === b.dataset.val)));
-  render();
-}));
-
-/* ---- 一覧描画 ---- */
-const io = new IntersectionObserver(entries=>{
-  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); }});
-},{threshold:.12});
-
-function render(){
-  const list = SHOPS.filter(s=>
-    (state.genre==="all"||s.genre===state.genre) &&
-    (state.area==="all" ||s.area ===state.area));
-  $("#shown").textContent = list.length;
-  const grid = $("#grid");
-
-  if(!list.length){
-    grid.innerHTML = `<div class="empty">${blobHTML("#C9BBAE",84)}
-      <p>この条件のお店は、まだありません。</p>
-      <small>ジャンルかエリアを「すべて」に戻すと全件出ます。</small></div>`;
-    return;
-  }
-
-  grid.innerHTML = list.map((s,n)=>{
-    const g = GENRES[s.genre] || {c:"#C9BBAE", o:"うまい"};
-    const visual = s.photo
-      ? `<img src="${s.photo}" alt="${s.name}">`
-      : `<span class="dots"></span>${blobHTML("#fff",104)}`;
-    const bg = s.photo ? "" : `background:${g.c}`;
-    return `<button class="card" data-i="${SHOPS.indexOf(s)}" style="transition-delay:${Math.min(n*60,420)}ms">
-      <span class="visual" style="${bg}">
-        ${visual}
-        <span class="score">★${s.score}</span>
-        <span class="onoma-tag">${g.o}</span>
-      </span>
-      <span class="cbody">
-        <h3>${s.name}</h3>
-        <span class="tags"><span class="tag">${s.genre}</span><span class="tag area">${s.area}</span></span>
-        <p class="memo">${s.memo}</p>
-        <span class="meta"><span>${s.access}</span><b>${s.budget}</b></span>
-      </span>
-    </button>`;
-  }).join("");
-
-  grid.querySelectorAll(".card").forEach(c=>{
-    io.observe(c);
-    c.addEventListener("click",()=>open(SHOPS[+c.dataset.i], +c.dataset.i));
-  });
-}
-
-/* ---- 詳細 ---- */
-const modal = $("#modal");
-let lastFocus = null;
-function open(s, i){
-  const g = GENRES[s.genre] || {c:"#C9BBAE"};
-  lastFocus = document.activeElement;
-  $("#mBlob").innerHTML = blobHTML(g.c, 74);
-  $("#mName").textContent = s.name;
-  $("#mYomi").textContent = s.yomi || "";
-  $("#mMemo").textContent = s.memo;
-  $("#mGenre").textContent = s.genre;
-  $("#mArea").textContent = s.area;
-  $("#mAccess").textContent = s.access;
-  $("#mBudget").textContent = s.budget;
-  $("#mDish").textContent = s.dish;
-  $("#mScore").textContent = "★".repeat(s.score) + "☆".repeat(5 - s.score);
-  $("#mMap").href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(`${s.name} ${s.area}`);
-  modal.classList.add("open");
-  document.body.style.overflow = "hidden";
-  $(".mclose").focus();
-}
-function close(){
-  modal.classList.remove("open");
-  document.body.style.overflow = "";
-  lastFocus && lastFocus.focus();
-}
-modal.querySelectorAll("[data-close]").forEach(el=>el.addEventListener("click", close));
-addEventListener("keydown", e=>{ if(e.key==="Escape" && modal.classList.contains("open")) close(); });
-
-render();
-</script>
+<script src="assets/data/shops.js"></script>
+<script src="assets/js/main.js"></script>
 </body>
 </html>
