@@ -1,0 +1,16 @@
+---
+/** ブランドのしずくマーク。face を付けると顔入りロゴになる */
+interface Props { class?: string; face?: boolean; width?: number }
+const { class: klass, face = false, width } = Astro.props;
+const D = "M100 4 C138 62 180 100 180 140 a80 80 0 1 1 -160 0 c0 -40 42 -78 80 -136 z";
+---
+<svg class={klass} width={width} viewBox="0 0 200 226" aria-hidden="true">
+  <path d={D} fill="#2CC1CC" />
+  {face && (
+    <Fragment>
+      <circle cx="75" cy="132" r="9" fill="#fff" />
+      <circle cx="125" cy="132" r="9" fill="#fff" />
+      <path d="M76 166 q24 22 48 0" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" />
+    </Fragment>
+  )}
+</svg>

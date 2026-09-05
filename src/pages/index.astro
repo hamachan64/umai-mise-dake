@@ -1,0 +1,251 @@
+---
+import Base from "../layouts/Base.astro";
+import Marquee from "../components/Marquee.astro";
+import ShopCard from "../components/ShopCard.astro";
+import ShopModal from "../components/ShopModal.astro";
+import { SHOPS, GENRE_LIST, AREA_LIST, iconOf } from "../data/shops";
+import { url } from "../lib/url";
+
+const countBy = (key: "genre" | "area", v: string) =>
+  SHOPS.filter((s) => s[key] === v).length;
+
+// ヒーローに散らす切り抜きの位置（中央はテキストなので空ける）
+const spots = [
+  [5, 3, 86], [25, 11, 60], [50, 2, 94], [72, 12, 58], [87, 5, 72],
+  [3, 85, 78], [21, 93, 56], [46, 83, 90], [67, 93, 62], [85, 81, 74],
+  [1, 31, 50], [93, 45, 52],
+] as const;
+const pool = [...GENRE_LIST.map(iconOf), "🍖", "🍤", "🥢", "🍶", "🍢", "🥟"];
+---
+
+<Base title="うまい店だけ。｜わたしのオススメ飲食店" current="home">
+
+  <div id="loader">
+    <svg class="drop" viewBox="0 0 200 226" aria-hidden="true">
+      <path d="M100 4 C138 62 180 100 180 140 a80 80 0 1 1 -160 0 c0 -40 42 -78 80 -136 z" fill="#2CC1CC" />
+      <text x="100" y="158" text-anchor="middle" font-size="52">🔥</text>
+    </svg>
+    <div class="loading-word" id="loadWord"></div>
+  </div>
+
+  <!-- ============ ヒーロー ============ -->
+  <section class="hero" id="top">
+    <div class="cutouts" aria-hidden="true">
+      {spots.map(([t, l, s], i) => (
+        <span
+          class="cutout"
+          style={`top:${t}%;left:${l}%;--s:${s}px;--r:${i % 2 ? 9 : -11}deg;` +
+                 `--d:${(5 + (i % 4) * 0.9).toFixed(1)}s;--dl:${(i * 0.35).toFixed(2)}s`}
+        >{pool[i % pool.length]}</span>
+      ))}
+    </div>
+
+    <div class="wrap inner">
+      <svg class="drop-badge" viewBox="0 0 200 226" role="img" aria-label={`オススメ${SHOPS.length}軒`}>
+        <path d="M100 4 C138 62 180 100 180 140 a80 80 0 1 1 -160 0 c0 -40 42 -78 80 -136 z" fill="#2CC1CC" />
+        <text x="100" y="102" text-anchor="middle" fill="#fff" font-family="Montserrat, sans-serif" font-weight="700" font-size="8" letter-spacing="1.4">ONLY THE GOOD ONES</text>
+        <text x="100" y="128" text-anchor="middle" font-size="24">🔥</text>
+        <text id="dropNum" x="100" y="176" text-anchor="middle" fill="#fff" font-family="Montserrat, sans-serif" font-weight="800" font-size="44" letter-spacing="-1">0</text>
+        <text x="100" y="192" text-anchor="middle" fill="#fff" font-family="Montserrat, sans-serif" font-weight="700" font-size="7.5" letter-spacing="1.9" opacity=".9">SHOPS SELECTED</text>
+      </svg>
+
+      <h1 id="h1"></h1>
+      <p class="sub">自分の足で通って、人にすすめたくなった店だけ。</p>
+
+      <div class="stats">
+        <div><b id="s1">0</b><small>Shops</small></div>
+        <div><b id="s2">0</b><small>Genres</small></div>
+        <div><b id="s3">0</b><small>Areas</small></div>
+      </div>
+
+      <a class="scroll-cue" href="#about"><span>SCROLL</span><i></i></a>
+    </div>
+  </section>
+
+  <!-- ============ キービジュアル ============ -->
+  <section class="kv" id="about">
+    <div class="wrap">
+      <div class="kv-inner reveal">
+        <div class="kv-photo">
+          <span class="big">🍽</span>
+          <svg class="kv-swoosh" viewBox="0 0 200 120" aria-hidden="true">
+            <path d="M8 8C8 70 60 108 130 108c46 0 66-24 66-48" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".9" />
+          </svg>
+        </div>
+        <div class="kv-text">
+          <p class="script">Tasty Days!</p>
+          <h2>うまい店は、<span class="hl-box">誰かに言いたく</span>なる。</h2>
+          <p>食べログの点数でも、行列の長さでもなく、「自分がまた行った店」だけを並べたリストです。</p>
+          <p>条件を細かく決めたいときは詳細検索、位置から選びたいときは地図をどうぞ。</p>
+          <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px">
+            <a class="pill ghost" href={url("search")}>詳細検索する →</a>
+            <button type="button" class="pill ghost" data-random>ランダムで1軒 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Marquee />
+
+  <!-- ============ 絞り込み ============ -->
+  <nav class="filters" id="filters" aria-label="絞り込み">
+    <div class="wrap">
+      <div class="frow">
+        <div class="flabel">Genre</div>
+        <div class="chips">
+          <button type="button" class="chip" data-key="genre" data-val="all" aria-pressed="true">すべて<span class="n">{SHOPS.length}</span></button>
+          {GENRE_LIST.map((g) => (
+            <button type="button" class="chip" data-key="genre" data-val={g} aria-pressed="false">{g}<span class="n">{countBy("genre", g)}</span></button>
+          ))}
+        </div>
+      </div>
+      <div class="frow">
+        <div class="flabel">Area</div>
+        <div class="chips">
+          <button type="button" class="chip" data-key="area" data-val="all" aria-pressed="true">すべて<span class="n">{SHOPS.length}</span></button>
+          {AREA_LIST.map((a) => (
+            <button type="button" class="chip" data-key="area" data-val={a} aria-pressed="false">{a}<span class="n">{countBy("area", a)}</span></button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============ 一覧 ============ -->
+  <main class="wrap" id="list">
+    <div class="list-head">
+      <div>
+        <p class="label">Recommended</p>
+        <h2 class="h-jp">オススメ一覧</h2>
+      </div>
+      <div class="count">
+        <em id="shown">{SHOPS.length}</em> / <span>{SHOPS.length}</span> SHOPS
+        <a class="reset" href={url("search")} style="margin-left:14px">もっと細かく探す →</a>
+      </div>
+    </div>
+
+    <div class="grid" id="grid">
+      {SHOPS.map((s, i) => <ShopCard shop={s} index={i} />)}
+      <div class="empty" id="empty" hidden>
+        <span class="big">🍽</span>
+        <p>この条件のお店は、まだありません。</p>
+        <small>ジャンルかエリアを「すべて」に戻すと全件出ます。</small>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ ジャンル図鑑 ============ -->
+  <div class="arch" aria-hidden="true"><span></span><span></span></div>
+  <section class="zukan" id="zukan">
+    <div class="wrap">
+      <div class="title reveal">
+        <span class="script">Genre Book</span>
+        <small>ジャンル図鑑</small>
+      </div>
+      <p class="lead reveal">ちょっと「変」わった切り口で、ジャンルから探す。<br />とにかく口の中がたのしいのだ。</p>
+      <ul class="zlist reveal">
+        {GENRE_LIST.map((g) => (
+          <li>
+            <button type="button" data-jump-genre={g}>
+              <span class="big">{iconOf(g)}</span>
+              <span class="nm">{g}<br />{countBy("genre", g)}軒</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <a class="pill" href={url("search")}>詳細検索でさらに絞る →</a>
+    </div>
+  </section>
+
+  <ShopModal />
+</Base>
+
+<script>
+  import { SHOPS, GENRE_LIST, AREA_LIST } from "../data/shops";
+
+  const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
+  const $$ = <T extends HTMLElement>(s: string) => [...document.querySelectorAll<T>(s)];
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---- ローディング ---- */
+  $("#loadWord").innerHTML = [..."たべにいこう"]
+    .map((c, i) => `<span style="animation-delay:${i * 85}ms">${c}</span>`).join("");
+  const hideLoader = () => $("#loader").classList.add("done");
+  reduce ? hideLoader() : setTimeout(hideLoader, 1600);
+
+  /* ---- 見出しを1文字ずつ ---- */
+  {
+    const parts = [
+      { t: "「また」", q: true }, { t: "行きたい店を、", q: false },
+      { br: true }, { t: "「ぜんぶ」", q: true }, { t: "ここに。", q: false },
+    ];
+    let i = 0;
+    $("#h1").innerHTML = parts.map((p) => {
+      if ("br" in p) return "<br>";
+      const chars = [...p.t!].map((c) =>
+        `<span class="ch" style="animation-delay:${(i++) * 42 + 700}ms">${c}</span>`).join("");
+      return p.q ? `<span class="q">${chars}</span>` : chars;
+    }).join("");
+  }
+
+  /* ---- 数字カウントアップ ---- */
+  const countUp = (el: HTMLElement, target: number) => {
+    if (reduce) { el.textContent = String(target); return; }
+    let n = 0;
+    const step = () => {
+      n += Math.ceil((target - n) / 7) || 1;
+      if (n >= target) { el.textContent = String(target); return; }
+      el.textContent = String(n);
+      requestAnimationFrame(step);
+    };
+    setTimeout(step, 700);
+  };
+  countUp($("#s1"), SHOPS.length);
+  countUp($("#s2"), GENRE_LIST.length);
+  countUp($("#s3"), AREA_LIST.length);
+  countUp($("#dropNum"), SHOPS.length);
+
+  /* ---- 絞り込み（サーバー描画済みのカードを出し入れする） ---- */
+  const state = { genre: "all", area: "all" };
+  const cards = $$<HTMLElement>(".card");
+
+  const io = new IntersectionObserver(
+    (es) => es.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }),
+    { threshold: 0.12, rootMargin: "0px 0px -40px" },
+  );
+
+  function apply() {
+    let shown = 0;
+    cards.forEach((c) => {
+      const ok = (state.genre === "all" || c.dataset.genre === state.genre)
+              && (state.area  === "all" || c.dataset.area  === state.area);
+      c.classList.toggle("hide", !ok);
+      if (ok) { shown++; io.observe(c); }
+    });
+    $("#shown").textContent = String(shown);
+    $("#empty").hidden = shown > 0;
+  }
+
+  function setFilter(key: "genre" | "area", val: string) {
+    state[key] = val;
+    $$(`.chip[data-key="${key}"]`).forEach((c) =>
+      c.setAttribute("aria-pressed", String(c.dataset.val === val)));
+    apply();
+  }
+
+  $$<HTMLElement>(".chip").forEach((b) =>
+    b.addEventListener("click", () =>
+      setFilter(b.dataset.key as "genre" | "area", b.dataset.val!)));
+
+  $$<HTMLElement>("[data-jump-genre]").forEach((b) =>
+    b.addEventListener("click", () => {
+      setFilter("genre", b.dataset.jumpGenre!);
+      setFilter("area", "all");
+      $("#list").scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
+    }));
+
+  apply();
+</script>

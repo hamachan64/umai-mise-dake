@@ -1,0 +1,16 @@
+---
+import Drop from "./Drop.astro";
+import { url } from "../lib/url";
+
+const updated = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit" })
+  .replace(/\//g, ".").replace(/\.$/, "");
+---
+<footer>
+  <div class="wrap">
+    <span class="fl">
+      <Drop width={26} />
+      <span><b><a href={url()} style="text-decoration:none">うまい店だけ。</a></b>　個人が食べて回った記録です。</span>
+    </span>
+    <span class="fr">LAST UPDATED {updated}</span>
+  </div>
+</footer>

@@ -1,0 +1,142 @@
+---
+import Base from "../layouts/Base.astro";
+import ShopModal from "../components/ShopModal.astro";
+import { SHOPS, GENRE_LIST, AREA_LIST } from "../data/shops";
+import { url } from "../lib/url";
+
+const countBy = (key: "genre" | "area", v: string) =>
+  SHOPS.filter((s) => s[key] === v).length;
+---
+
+<Base
+  title="地図で見る｜うまい店だけ。"
+  description="オススメの店を地図上のピンから探せます。ジャンルとエリアで絞り込み可能。"
+  current="map"
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <p class="label">Map</p>
+      <h1>地図で見る</h1>
+      <p>ピンをタップすると店の詳細が開きます。今いる場所の近くから決めたいときに。</p>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <nav class="filters" style="position:static;background:none;border:0;margin-bottom:20px" aria-label="絞り込み">
+      <div class="frow">
+        <div class="flabel">Genre</div>
+        <div class="chips">
+          <button type="button" class="chip" data-key="genre" data-val="all" aria-pressed="true">すべて<span class="n">{SHOPS.length}</span></button>
+          {GENRE_LIST.map((g) => (
+            <button type="button" class="chip" data-key="genre" data-val={g} aria-pressed="false">{g}<span class="n">{countBy("genre", g)}</span></button>
+          ))}
+        </div>
+      </div>
+      <div class="frow">
+        <div class="flabel">Area</div>
+        <div class="chips">
+          <button type="button" class="chip" data-key="area" data-val="all" aria-pressed="true">すべて<span class="n">{SHOPS.length}</span></button>
+          {AREA_LIST.map((a) => (
+            <button type="button" class="chip" data-key="area" data-val={a} aria-pressed="false">{a}<span class="n">{countBy("area", a)}</span></button>
+          ))}
+        </div>
+      </div>
+    </nav>
+
+    <div class="map-shell">
+      <div id="map"></div>
+    </div>
+
+    <div class="sortbar" style="padding-bottom:80px">
+      <div class="count"><em id="shown">{SHOPS.length}</em> / <span>{SHOPS.length}</span> SHOPS</div>
+      <a class="pill" href={url("search")}>条件を細かく指定する →</a>
+    </div>
+  </main>
+
+  <ShopModal />
+</Base>
+
+<script>
+  import L from "leaflet";
+  import "leaflet/dist/leaflet.css";
+  import { SHOPS, iconOf, yen } from "../data/shops";
+
+  const $  = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
+  const $$ = <T extends HTMLElement>(s: string) => [...document.querySelectorAll<T>(s)];
+  const esc = (s: string) =>
+    s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+
+  const map = L.map("map", { scrollWheelZoom: false, zoomControl: true })
+    .setView([35.681, 139.717], 12);
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
+
+  // ドラッグ中以外のホイールは通常スクロールに任せる（地図に吸われないように）
+  map.on("focus", () => map.scrollWheelZoom.enable());
+  map.on("blur",  () => map.scrollWheelZoom.disable());
+
+  const markers = SHOPS.map((s) => {
+    const m = L.marker([s.lat, s.lng], {
+      title: s.name,
+      icon: L.divIcon({
+        html: `<div class="pin"><b>${iconOf(s.genre)}</b></div>`,
+        className: "",
+        iconSize: [38, 38],
+        iconAnchor: [19, 36],
+        popupAnchor: [0, -32],
+      }),
+    }).bindPopup(
+      `<p class="mp-name">${esc(s.name)}</p>
+       <p class="mp-meta">${esc(s.genre)}・${esc(s.area)}／${esc(yen(s.budget))} 前後／★${s.score}<br>${esc(s.access)}</p>
+       <span class="mp-act">
+         <button type="button" class="go" data-shop="${s.id}">詳細を見る</button>
+         <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + " " + s.area)}"
+            target="_blank" rel="noopener">Googleマップ</a>
+       </span>`,
+    );
+    return { shop: s, marker: m };
+  });
+
+  /* ---- 絞り込み ---- */
+  const state = { genre: "all", area: "all" };
+
+  function apply(fit = true) {
+    const on = markers.filter(({ shop }) =>
+      (state.genre === "all" || shop.genre === state.genre) &&
+      (state.area  === "all" || shop.area  === state.area));
+
+    markers.forEach(({ marker }) => marker.remove());
+    on.forEach(({ marker }) => marker.addTo(map));
+    $("#shown").textContent = String(on.length);
+
+    if (fit && on.length) {
+      map.fitBounds(L.latLngBounds(on.map(({ shop }) => [shop.lat, shop.lng] as [number, number])),
+        { padding: [60, 60], maxZoom: 15 });
+    }
+  }
+
+  function setFilter(key: "genre" | "area", val: string, fit = true) {
+    state[key] = val;
+    $$(`.chip[data-key="${key}"]`).forEach((c) =>
+      c.setAttribute("aria-pressed", String(c.dataset.val === val)));
+    apply(fit);
+  }
+
+  $$<HTMLElement>(".chip").forEach((b) =>
+    b.addEventListener("click", () =>
+      setFilter(b.dataset.key as "genre" | "area", b.dataset.val!)));
+
+  // 詳細検索から引き継いだ条件を反映（複数選択のうち先頭だけ使う）
+  {
+    const p = new URLSearchParams(location.search);
+    const first = (k: string) => (p.get(k) ?? "").split(",").filter(Boolean)[0];
+    const g = first("genre"), a = first("area");
+    if (g) setFilter("genre", g, false);
+    if (a) setFilter("area", a, false);
+  }
+
+  apply();
+</script>

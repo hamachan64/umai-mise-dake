@@ -1,0 +1,32 @@
+---
+---
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mName">
+  <div class="mbg" data-close></div>
+  <div class="mcard">
+    <button type="button" class="mclose" data-close aria-label="閉じる">✕</button>
+    <div class="mtop">
+      <span class="big" id="mIcon"></span>
+      <span>
+        <h3 id="mName"></h3>
+        <span class="yomi" id="mYomi"></span>
+      </span>
+    </div>
+    <div class="mbody">
+      <p class="lead2" id="mMemo"></p>
+      <dl class="spec">
+        <dt>Genre</dt><dd id="mGenre"></dd>
+        <dt>Area</dt><dd id="mArea"></dd>
+        <dt>Access</dt><dd id="mAccess"></dd>
+        <dt>Budget</dt><dd id="mBudget"></dd>
+        <dt>Order</dt><dd id="mDish"></dd>
+        <dt>Score</dt><dd id="mScore"></dd>
+      </dl>
+      <a class="pill teal" id="mMap" href="#" target="_blank" rel="noopener">Googleマップで開く →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { initModal } from "../scripts/modal";
+  initModal();
+</script>

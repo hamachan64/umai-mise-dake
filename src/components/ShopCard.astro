@@ -1,0 +1,42 @@
+---
+import { iconOf, onomaOf, yen, bandOf, type Shop } from "../data/shops";
+import { url } from "../lib/url";
+
+interface Props { shop: Shop; index?: number }
+const { shop: s, index = 0 } = Astro.props;
+
+// 詳細検索のフリーワード用に、検索対象をまとめておく
+const haystack = [s.name, s.yomi, s.genre, s.area, s.access, s.dish, s.memo]
+  .join(" ").toLowerCase();
+---
+
+<button
+  type="button"
+  class="card"
+  data-shop={s.id}
+  data-genre={s.genre}
+  data-area={s.area}
+  data-score={s.score}
+  data-band={bandOf(s.budget)}
+  data-budget={s.budget}
+  data-name={s.name}
+  data-q={haystack}
+  style={`transition-delay:${Math.min(index * 55, 400)}ms`}
+>
+  <span class="visual">
+    {s.photo
+      ? <img src={url(s.photo)} alt={s.name} loading="lazy" />
+      : <Fragment><span class="ring"></span><span class="big">{iconOf(s.genre)}</span></Fragment>}
+    <span class="score">★ {s.score}.0</span>
+    <span class="onoma">{onomaOf(s.genre)}</span>
+  </span>
+  <span class="cbody">
+    <h3>{s.name}</h3>
+    <span class="tags">
+      <span class="tag">{s.genre}</span>
+      <span class="tag area">{s.area}</span>
+    </span>
+    <p class="memo">{s.memo}</p>
+    <span class="meta"><span>{s.access}</span><b>{yen(s.budget)}</b></span>
+  </span>
+</button>

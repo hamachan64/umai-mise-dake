@@ -1,0 +1,60 @@
+---
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import SocialRail from "../components/SocialRail.astro";
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: "home" | "search" | "map";
+}
+
+const {
+  title,
+  description = "実際に通って、また行きたくなった店だけ。ジャンルとエリアで絞り込めます。",
+  current,
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Caveat:wght@700&family=Montserrat:wght@600;700;800&display=swap"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <SocialRail />
+  <Header current={current} />
+  <slot />
+  <Footer />
+
+  <script>
+    // ヘッダーの影とスクロール連動の出現アニメーション（全ページ共通）
+    const bar = document.querySelector("header.bar")!;
+    const onScroll = () => bar.classList.toggle("stuck", scrollY > 8);
+    addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      }),
+      { threshold: 0.12, rootMargin: "0px 0px -40px" },
+    );
+    document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+  </script>
+</body>
+</html>

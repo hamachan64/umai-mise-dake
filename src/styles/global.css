@@ -149,6 +149,8 @@ nav.gnav a::after{
   transform:scaleX(0); transform-origin:left; transition:transform .3s cubic-bezier(.2,.9,.3,1);
 }
 nav.gnav a:hover::after{ transform:scaleX(1) }
+nav.gnav a[aria-current="page"]{ color:var(--teal-deep) }
+nav.gnav a[aria-current="page"]::after{ transform:scaleX(1) }
 .bar-cta{ display:flex; gap:8px; flex:none }
 .bar-cta .pill{ padding:8px 18px; font-size:12px }
 
@@ -495,6 +497,118 @@ dl.spec dd{ margin:0 }
 .reveal.in{ opacity:1; transform:none }
 
 /* =====================================================================
+   下層ページのヘッダー（詳細検索・地図）
+   ===================================================================== */
+.page-hero{ position:relative; padding:52px 0 30px; overflow:hidden }
+.page-hero::before{
+  content:""; position:absolute; inset:0 0 auto; height:100%;
+  background:linear-gradient(180deg, var(--teal-mist), transparent);
+}
+.page-hero .wrap{ position:relative; z-index:1 }
+.page-hero h1{ font-family:var(--display); font-weight:900; font-size:clamp(24px,3.6vw,36px); margin:0 0 10px }
+.page-hero p{ color:var(--gray); font-size:13.5px; margin:0; max-width:38em }
+
+/* =====================================================================
+   詳細検索
+   ===================================================================== */
+.search-panel{
+  background:var(--paper); border:1px solid var(--line); border-radius:24px;
+  box-shadow:0 6px 26px rgba(20,16,15,.06);
+  padding:24px clamp(18px,3vw,30px); margin-bottom:34px;
+}
+.srow{ padding:16px 0; display:grid; grid-template-columns:96px 1fr; gap:18px; align-items:start }
+.srow + .srow{ border-top:1px solid var(--line) }
+.srow > .flabel{ width:auto; padding-top:6px }
+
+.qbox{ position:relative; display:flex; align-items:center }
+.qbox svg{ position:absolute; left:16px; color:var(--gray) }
+.qbox input{
+  width:100%; font:inherit; font-size:14px; color:inherit;
+  border:1px solid var(--line); border-radius:999px;
+  padding:11px 18px 11px 44px; background:var(--teal-mist);
+  transition:border-color .25s, background .25s;
+}
+.qbox input:focus{ outline:none; border-color:var(--teal); background:var(--paper) }
+.qbox input::placeholder{ color:#B4ADA6 }
+
+/* チェックボックス／ラジオをピルに見せる */
+.opts{ display:flex; flex-wrap:wrap; gap:7px }
+.opt{ position:relative }
+.opt input{ position:absolute; inset:0; opacity:0; cursor:pointer; margin:0 }
+.opt span{
+  display:inline-flex; align-items:center; gap:7px;
+  border:1px solid var(--line); background:var(--paper);
+  border-radius:999px; padding:6px 15px; font-size:12.5px;
+  transition:background .22s, color .22s, border-color .22s, transform .22s cubic-bezier(.2,.9,.3,1);
+}
+.opt input:hover + span{ border-color:var(--teal); color:var(--teal-deep); transform:translateY(-2px) }
+.opt input:checked + span{ background:var(--teal); border-color:var(--teal); color:#fff }
+.opt input:focus-visible + span{ outline:3px solid var(--teal); outline-offset:3px }
+.opt .n{ font-family:var(--latin); font-weight:700; font-size:10.5px; opacity:.55 }
+
+.sortbar{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:14px; flex-wrap:wrap; padding-bottom:22px;
+}
+.sortbar select{
+  font:inherit; font-size:13px; color:inherit;
+  border:1px solid var(--line); border-radius:999px;
+  padding:8px 38px 8px 16px; background:var(--paper);
+  appearance:none; cursor:pointer;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237C756F' stroke-width='2.4' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat; background-position:right 14px center; background-size:13px;
+}
+.sortbar select:focus{ outline:none; border-color:var(--teal) }
+.reset{ font-size:12.5px; color:var(--gray); text-decoration:underline; text-underline-offset:3px }
+.reset:hover{ color:var(--pink) }
+
+.card.hide{ display:none }
+
+/* =====================================================================
+   地図
+   ===================================================================== */
+.map-shell{
+  position:relative; border-radius:28px; overflow:hidden;
+  border:1px solid var(--line); box-shadow:0 8px 30px rgba(20,16,15,.08);
+  margin-bottom:34px;
+}
+#map{ height:clamp(420px, 66vh, 680px); width:100%; background:var(--teal-mist); z-index:1 }
+.leaflet-container{ font-family:var(--body) }
+.leaflet-popup-content-wrapper{ border-radius:16px; box-shadow:0 14px 34px rgba(20,16,15,.18) }
+.leaflet-popup-content{ margin:14px 16px; line-height:1.7 }
+.leaflet-popup-tip{ box-shadow:none }
+.leaflet-bar a{ border-radius:0 }
+.leaflet-control-attribution{ font-size:10px }
+
+.pin{
+  display:grid; place-items:center;
+  width:38px; height:38px; border-radius:50% 50% 50% 4px;
+  background:var(--teal); transform:rotate(45deg);
+  box-shadow:0 4px 12px rgba(20,16,15,.28);
+  border:2px solid #fff;
+  transition:transform .25s cubic-bezier(.2,.9,.3,1), background .25s;
+}
+.pin b{ transform:rotate(-45deg); font-size:17px; line-height:1 }
+.leaflet-marker-icon:hover .pin{ transform:rotate(45deg) scale(1.14) }
+.leaflet-marker-icon.on .pin{ background:var(--pink) }
+
+.mp-name{ font-family:var(--display); font-weight:900; font-size:14.5px; margin:0 0 3px }
+.mp-meta{ font-size:11.5px; color:var(--gray); margin:0 0 9px }
+.mp-act{ display:flex; gap:7px; flex-wrap:wrap }
+.mp-act button,.mp-act a{
+  font-size:11.5px; font-weight:700; text-decoration:none;
+  border-radius:999px; padding:5px 13px; border:1px solid var(--line);
+}
+.mp-act .go{ background:var(--teal); border-color:var(--teal); color:#fff }
+
+.nores{
+  text-align:center; padding:70px 20px; color:var(--gray);
+  border:1px dashed var(--line); border-radius:24px; background:var(--teal-mist);
+}
+.nores .big{ font-size:56px; line-height:1; filter:grayscale(.7) opacity(.6) }
+.nores p{ font-family:var(--display); font-weight:900; font-size:16px; color:var(--ink); margin:14px 0 4px }
+
+/* =====================================================================
    レスポンシブ
    ===================================================================== */
 @media (max-width:900px){
@@ -508,6 +622,11 @@ dl.spec dd{ margin:0 }
   :root{ --head-h:60px }
   body{ font-size:14.5px }
   .bar-cta .pill.teal{ display:none }
+  .srow{ grid-template-columns:1fr; gap:10px }
+  .srow > .flabel{ padding-top:0 }
+  .search-panel{ border-radius:20px; padding:14px 16px }
+  .map-shell{ border-radius:20px }
+  #map{ height:64vh }
   .hero{ padding:44px 0 68px }
   .cutout{ font-size:calc(var(--s,72px) * .58) }
   .stats{ gap:26px }

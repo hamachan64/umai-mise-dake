@@ -1,0 +1,229 @@
+---
+import Base from "../layouts/Base.astro";
+import ShopCard from "../components/ShopCard.astro";
+import ShopModal from "../components/ShopModal.astro";
+import { SHOPS, GENRE_LIST, AREA_LIST, BUDGET_BANDS, bandOf, iconOf } from "../data/shops";
+import { url } from "../lib/url";
+
+const countGenre = (g: string) => SHOPS.filter((s) => s.genre === g).length;
+const countArea  = (a: string) => SHOPS.filter((s) => s.area === a).length;
+const countBand  = (b: string) => SHOPS.filter((s) => bandOf(s.budget) === b).length;
+---
+
+<Base
+  title="詳細検索｜うまい店だけ。"
+  description="ジャンル・エリア・予算・推し度・キーワードから、条件を組み合わせて店を探せます。"
+  current="search"
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <p class="label">Advanced Search</p>
+      <h1>詳細検索</h1>
+      <p>条件は組み合わせられます。絞った状態のURLはそのまま共有・ブックマークできます。</p>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <form class="search-panel" id="sform" autocomplete="off">
+      <div class="srow" style="grid-template-columns:1fr;padding-top:4px">
+        <div class="qbox">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="7" /><path d="M16.5 16.5 21 21" />
+          </svg>
+          <input type="search" id="q" name="q" placeholder="店名・駅名・メニュー・メモから探す（例：煮干し、ひとり、コハダ）" />
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="flabel">Genre</div>
+        <div class="opts">
+          {GENRE_LIST.map((g) => (
+            <label class="opt">
+              <input type="checkbox" name="genre" value={g} />
+              <span>{iconOf(g)} {g}<i class="n">{countGenre(g)}</i></span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="flabel">Area</div>
+        <div class="opts">
+          {AREA_LIST.map((a) => (
+            <label class="opt">
+              <input type="checkbox" name="area" value={a} />
+              <span>{a}<i class="n">{countArea(a)}</i></span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="flabel">Budget</div>
+        <div class="opts">
+          {BUDGET_BANDS.map((b) => (
+            <label class="opt">
+              <input type="checkbox" name="band" value={b.id} />
+              <span>{b.label}<i class="n">{countBand(b.id)}</i></span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="flabel">Score</div>
+        <div class="opts">
+          {[["0", "すべて"], ["3", "★3以上"], ["4", "★4以上"], ["5", "★5のみ"]].map(([v, l], i) => (
+            <label class="opt">
+              <input type="radio" name="score" value={v} checked={i === 0} />
+              <span>{l}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </form>
+
+    <div class="sortbar">
+      <div class="count"><em id="shown">{SHOPS.length}</em> / <span>{SHOPS.length}</span> SHOPS</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <a class="reset" href={url("search")} id="reset">条件をリセット</a>
+        <select id="sort" aria-label="並び替え">
+          <option value="score">推し度が高い順</option>
+          <option value="budget-asc">予算が安い順</option>
+          <option value="budget-desc">予算が高い順</option>
+          <option value="name">店名順</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid" id="grid">
+      {SHOPS.map((s, i) => <ShopCard shop={s} index={i} />)}
+    </div>
+
+    <div class="nores" id="nores" hidden>
+      <span class="big">🍽</span>
+      <p>条件に合うお店が見つかりませんでした。</p>
+      <small>キーワードを短くするか、チェックを減らしてみてください。</small>
+    </div>
+
+    <div style="padding:44px 0 90px;text-align:center">
+      <a class="pill" id="tomap" href={url("map")}>この条件を地図で見る →</a>
+    </div>
+  </main>
+
+  <ShopModal />
+</Base>
+
+<script>
+  const $  = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
+  const $$ = <T extends HTMLElement>(s: string) => [...document.querySelectorAll<T>(s)];
+
+  const form  = $<HTMLFormElement>("#sform");
+  const q     = $<HTMLInputElement>("#q");
+  const sort  = $<HTMLSelectElement>("#sort");
+  const grid  = $("#grid");
+  const cards = $$<HTMLElement>(".card");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const io = new IntersectionObserver(
+    (es) => es.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }),
+    { threshold: 0.12, rootMargin: "0px 0px -40px" },
+  );
+
+  const checked = (name: string) =>
+    $$<HTMLInputElement>(`input[name="${name}"]:checked`).map((i) => i.value);
+
+  /* ---- URL → フォーム（読み込み時と戻る操作） ---- */
+  function readUrl() {
+    const p = new URLSearchParams(location.search);
+    q.value = p.get("q") ?? "";
+    for (const name of ["genre", "area", "band"]) {
+      const want = new Set((p.get(name) ?? "").split(",").filter(Boolean));
+      $$<HTMLInputElement>(`input[name="${name}"]`).forEach((i) => { i.checked = want.has(i.value); });
+    }
+    const sc = p.get("score") ?? "0";
+    $$<HTMLInputElement>('input[name="score"]').forEach((i) => { i.checked = i.value === sc; });
+    sort.value = p.get("sort") ?? "score";
+  }
+
+  /* ---- フォーム → URL ---- */
+  function writeUrl() {
+    const p = new URLSearchParams();
+    if (q.value.trim()) p.set("q", q.value.trim());
+    for (const name of ["genre", "area", "band"]) {
+      const v = checked(name);
+      if (v.length) p.set(name, v.join(","));
+    }
+    const sc = checked("score")[0];
+    if (sc && sc !== "0") p.set("score", sc);
+    if (sort.value !== "score") p.set("sort", sort.value);
+    const qs = p.toString();
+    history.replaceState(null, "", qs ? `?${qs}` : location.pathname);
+
+    // 「この条件を地図で見る」に今の条件を引き継ぐ
+    const toMap = $<HTMLAnchorElement>("#tomap");
+    toMap.href = toMap.pathname + (qs ? `?${qs}` : "");
+  }
+
+  /* ---- 絞り込み＋並び替え ---- */
+  function apply() {
+    const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const g = new Set(checked("genre"));
+    const a = new Set(checked("area"));
+    const b = new Set(checked("band"));
+    const minScore = Number(checked("score")[0] ?? 0);
+
+    let shown = 0;
+    cards.forEach((c) => {
+      const d = c.dataset;
+      const ok =
+        (!g.size || g.has(d.genre!)) &&
+        (!a.size || a.has(d.area!)) &&
+        (!b.size || b.has(d.band!)) &&
+        Number(d.score) >= minScore &&
+        words.every((w) => d.q!.includes(w));
+      c.classList.toggle("hide", !ok);
+      if (ok) { shown++; io.observe(c); }
+    });
+
+    // 並び替えは表示中のカードをDOMごと並べ替える
+    const dir = sort.value;
+    const key = (c: HTMLElement) => {
+      const d = c.dataset;
+      if (dir === "budget-asc")  return Number(d.budget);
+      if (dir === "budget-desc") return -Number(d.budget);
+      if (dir === "name")        return d.name!;
+      return -Number(d.score) * 1e6 + Number(d.budget); // 推し度→予算安い順
+    };
+    [...cards]
+      .sort((x, y) => {
+        const kx = key(x), ky = key(y);
+        return typeof kx === "string" ? kx.localeCompare(ky as string, "ja") : kx - (ky as number);
+      })
+      .forEach((c) => grid.append(c));
+
+    $("#shown").textContent = String(shown);
+    $("#nores").hidden = shown > 0;
+    grid.hidden = shown === 0;
+    writeUrl();
+  }
+
+  form.addEventListener("input", apply);
+  form.addEventListener("submit", (e) => e.preventDefault());
+  sort.addEventListener("change", apply);
+  addEventListener("popstate", () => { readUrl(); apply(); });
+
+  $("#reset").addEventListener("click", (e) => {
+    e.preventDefault();
+    form.reset();
+    $$<HTMLInputElement>('input[name="score"]')[0]!.checked = true;
+    sort.value = "score";
+    apply();
+    if (!reduce) scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  readUrl();
+  apply();
+</script>

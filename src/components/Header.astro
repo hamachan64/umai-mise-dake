@@ -1,0 +1,38 @@
+---
+import { url } from "../lib/url";
+import Drop from "./Drop.astro";
+
+interface Props { current?: "home" | "search" | "map" }
+const { current } = Astro.props;
+
+const nav = [
+  { key: "home",   label: "HOME",   href: url() },
+  { key: "search", label: "SEARCH", href: url("search") },
+  { key: "map",    label: "MAP",    href: url("map") },
+] as const;
+---
+
+<header class="bar">
+  <div class="wrap">
+    <a class="logo" href={url()}>
+      <Drop class="mark" face />
+      <span><b>うまい店だけ。</b><small>ONLY THE GOOD ONES</small></span>
+    </a>
+
+    <nav class="gnav">
+      {nav.map((n) => (
+        <a href={n.href} aria-current={current === n.key ? "page" : undefined}>{n.label}</a>
+      ))}
+    </nav>
+
+    <div class="bar-cta">
+      <a class="pill teal" href={url("map")}>
+        地図で見る
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" /><circle cx="12" cy="10" r="2.4" />
+        </svg>
+      </a>
+      <button type="button" class="pill pink" data-random>今日の一軒</button>
+    </div>
+  </div>
+</header>
