@@ -1,0 +1,37 @@
+---
+/** 店の詳細シート（伝票風）。中身は scripts/sheet.ts が差し込む */
+---
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sName" hidden>
+  <div class="sheet-bg" data-close></div>
+  <article class="sheet-panel" data-lenis-prevent>
+    <header class="sheet-head" id="sHead">
+      <span class="sheet-no mono" id="sNo"></span>
+      <span class="sheet-onoma" id="sOnoma"></span>
+      <span class="sheet-k" id="sK" aria-hidden="true"></span>
+      <button type="button" class="sheet-close" data-close aria-label="閉じる">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="1.6" /></svg>
+      </button>
+    </header>
+    <div class="sheet-body">
+      <p class="sheet-cat mono" data-s><span id="sGenre"></span><span id="sArea"></span></p>
+      <h2 class="sheet-name" id="sName" data-s></h2>
+      <p class="sheet-yomi mono" id="sYomi" data-s></p>
+      <blockquote class="sheet-memo" data-s><p id="sMemo"></p></blockquote>
+      <dl class="sheet-spec" data-s>
+        <div><dt>これを頼む</dt><dd id="sDish"></dd></div>
+        <div><dt>予算の目安</dt><dd id="sBudget"></dd></div>
+        <div><dt>アクセス</dt><dd id="sAccess"></dd></div>
+        <div><dt>推し度</dt><dd id="sScore"></dd></div>
+      </dl>
+      <div class="sheet-act" data-s>
+        <a class="btn btn-ink" id="sMap" href="#" target="_blank" rel="noopener">
+          <span class="roll" data-text="Googleマップで開く"><span>Googleマップで開く</span></span><span aria-hidden="true">↗</span>
+        </a>
+      </div>
+      <nav class="sheet-pager mono" data-s aria-label="前後の店">
+        <button type="button" id="sPrev">← <span></span></button>
+        <button type="button" id="sNext"><span></span> →</button>
+      </nav>
+    </div>
+  </article>
+</div>
