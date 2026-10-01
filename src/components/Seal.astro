@@ -1,0 +1,6 @@
+---
+/** ブランドの朱印「旨」。ロゴ・ローダー・ヒーローで使い回す */
+interface Props { class?: string; size?: string; char?: string }
+const { class: klass, size = "36px", char = "旨" } = Astro.props;
+---
+<span class:list={["seal", klass]} style={`--size:${size}`} aria-hidden="true"><span>{char}</span></span>

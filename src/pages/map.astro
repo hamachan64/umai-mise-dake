@@ -1,141 +1,155 @@
 ---
 import Base from "../layouts/Base.astro";
-import ShopModal from "../components/ShopModal.astro";
+import ShopRow from "../components/ShopRow.astro";
 import { SHOPS, GENRE_LIST, AREA_LIST } from "../data/shops";
-import { url } from "../lib/url";
 
 const countBy = (key: "genre" | "area", v: string) =>
   SHOPS.filter((s) => s[key] === v).length;
+const areas = [...AREA_LIST].sort((a, b) => countBy("area", b) - countBy("area", a) || a.localeCompare(b, "ja"));
 ---
 
 <Base
   title="地図で見る｜うまい店だけ。"
   description="オススメの店を地図上のピンから探せます。ジャンルとエリアで絞り込み可能。"
   current="map"
+  bare
 >
-  <section class="page-hero">
-    <div class="wrap">
-      <p class="label">Map</p>
-      <h1>地図で見る</h1>
-      <p>ピンをタップすると店の詳細が開きます。今いる場所の近くから決めたいときに。</p>
-    </div>
-  </section>
-
-  <main class="wrap">
-    <nav class="filters" style="position:static;background:none;border:0;margin-bottom:20px" aria-label="絞り込み">
-      <div class="frow">
-        <div class="flabel">Genre</div>
-        <div class="chips">
-          <button type="button" class="chip" data-key="genre" data-val="all" aria-pressed="true">すべて<span class="n">{SHOPS.length}</span></button>
-          {GENRE_LIST.map((g) => (
-            <button type="button" class="chip" data-key="genre" data-val={g} aria-pressed="false">{g}<span class="n">{countBy("genre", g)}</span></button>
-          ))}
+  <main id="main" class="mapview">
+    <aside class="map-side">
+      <div class="map-top">
+        <h1 data-lines><span class="ln"><span class="ln-i">地図</span></span><span class="it">Map</span></h1>
+        <p data-fade="0.1">札をクリックで詳細。一覧の行にカーソルを合わせると、地図の札が浮きます。</p>
+        <div class="map-filters" data-fade="0.2">
+          <label>
+            <span class="mono">Genre</span>
+            <span class="select">
+              <select id="fGenre">
+                <option value="all">すべてのジャンル</option>
+                {GENRE_LIST.map((g) => <option value={g}>{g}（{countBy("genre", g)}）</option>)}
+              </select>
+            </span>
+          </label>
+          <label>
+            <span class="mono">Area</span>
+            <span class="select">
+              <select id="fArea">
+                <option value="all">すべてのエリア</option>
+                {areas.map((a) => <option value={a}>{a}（{countBy("area", a)}）</option>)}
+              </select>
+            </span>
+          </label>
         </div>
       </div>
-      <div class="frow">
-        <div class="flabel">Area</div>
-        <div class="chips">
-          <button type="button" class="chip" data-key="area" data-val="all" aria-pressed="true">すべて<span class="n">{SHOPS.length}</span></button>
-          {AREA_LIST.map((a) => (
-            <button type="button" class="chip" data-key="area" data-val={a} aria-pressed="false">{a}<span class="n">{countBy("area", a)}</span></button>
-          ))}
-        </div>
+      <div class="map-count"><b id="shown">{SHOPS.length}</b><span class="mono">/ {SHOPS.length} shops on the map</span></div>
+      <div class="map-list" id="list" data-lenis-prevent>
+        {SHOPS.map((s) => <ShopRow shop={s} compact />)}
       </div>
-    </nav>
-
-    <div class="map-shell">
-      <div id="map"></div>
-    </div>
-
-    <div class="sortbar" style="padding-bottom:80px">
-      <div class="count"><em id="shown">{SHOPS.length}</em> / <span>{SHOPS.length}</span> SHOPS</div>
-      <a class="pill" href={url("search")}>条件を細かく指定する →</a>
+    </aside>
+    <div class="map-stage" data-lenis-prevent>
+      <div id="map" aria-label="お店の地図"></div>
     </div>
   </main>
-
-  <ShopModal />
 </Base>
 
 <script>
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
-  import { SHOPS, iconOf, yen } from "../data/shops";
+  import { SHOPS, kanjiOf, toneOf } from "../data/shops";
+  import { gsap, $, $$, reduce, EASE_OUT } from "../scripts/motion";
 
-  const $  = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
-  const $$ = <T extends HTMLElement>(s: string) => [...document.querySelectorAll<T>(s)];
-  const esc = (s: string) =>
-    s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+  const desktop = matchMedia("(min-width: 901px)").matches;
 
-  const map = L.map("map", { scrollWheelZoom: false, zoomControl: true })
+  const map = L.map("map", { scrollWheelZoom: desktop, zoomControl: false, attributionControl: true })
     .setView([35.681, 139.717], 12);
+  L.control.zoom({ position: "bottomright" }).addTo(map);
+  const mapEl = $("#map");
+  const syncZoom = () => { mapEl.dataset.z = map.getZoom() < 13 ? "far" : "near"; };
+  map.on("zoomend", syncZoom);
+  syncZoom();
 
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
 
-  // ドラッグ中以外のホイールは通常スクロールに任せる（地図に吸われないように）
-  map.on("focus", () => map.scrollWheelZoom.enable());
-  map.on("blur",  () => map.scrollWheelZoom.disable());
+  const rows = new Map($$<HTMLElement>("#list .row").map((r) => [r.dataset.shop!, r]));
 
   const markers = SHOPS.map((s) => {
     const m = L.marker([s.lat, s.lng], {
       title: s.name,
+      riseOnHover: true,
       icon: L.divIcon({
-        html: `<div class="pin"><b>${iconOf(s.genre)}</b></div>`,
-        className: "",
-        iconSize: [38, 38],
-        iconAnchor: [19, 36],
-        popupAnchor: [0, -32],
+        html: `<span class="mk-in"><span class="mk" style="--tone:var(--${toneOf(s.genre)})">${kanjiOf(s.genre)}</span></span>`,
+        className: "mk-wrap",
+        iconSize: [30, 30],
+        iconAnchor: [15, 36],
       }),
-    }).bindPopup(
-      `<p class="mp-name">${esc(s.name)}</p>
-       <p class="mp-meta">${esc(s.genre)}・${esc(s.area)}／${esc(yen(s.budget))} 前後／★${s.score}<br>${esc(s.access)}</p>
-       <span class="mp-act">
-         <button type="button" class="go" data-shop="${s.id}">詳細を見る</button>
-         <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + " " + s.area)}"
-            target="_blank" rel="noopener">Googleマップ</a>
-       </span>`,
-    );
+    });
+    m.on("click", () => {
+      const row = rows.get(s.id)!;
+      row.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+      row.click();
+    });
+    m.on("mouseover", () => rows.get(s.id)?.classList.add("is-hot"));
+    m.on("mouseout", () => rows.get(s.id)?.classList.remove("is-hot"));
     return { shop: s, marker: m };
+  });
+  const byId = new Map(markers.map((x) => [x.shop.id, x.marker]));
+
+  // 一覧の行 ⇄ 地図の札
+  rows.forEach((row, id) => {
+    row.addEventListener("pointerenter", () => byId.get(id)?.getElement()?.classList.add("is-hot"));
+    row.addEventListener("pointerleave", () => byId.get(id)?.getElement()?.classList.remove("is-hot"));
+    row.addEventListener("focus", () => byId.get(id)?.getElement()?.classList.add("is-hot"));
+    row.addEventListener("blur", () => byId.get(id)?.getElement()?.classList.remove("is-hot"));
+    row.addEventListener("click", () => {
+      const m = byId.get(id)!;
+      map.flyTo(m.getLatLng(), Math.max(map.getZoom(), 15), { duration: reduce ? 0 : 1.1 });
+    });
   });
 
   /* ---- 絞り込み ---- */
-  const state = { genre: "all", area: "all" };
+  const fg = $<HTMLSelectElement>("#fGenre");
+  const fa = $<HTMLSelectElement>("#fArea");
+  let firstRun = true;
 
-  function apply(fit = true) {
+  function apply() {
+    const g = fg.value, a = fa.value;
     const on = markers.filter(({ shop }) =>
-      (state.genre === "all" || shop.genre === state.genre) &&
-      (state.area  === "all" || shop.area  === state.area));
+      (g === "all" || shop.genre === g) && (a === "all" || shop.area === a));
+    const ids = new Set(on.map((x) => x.shop.id));
 
     markers.forEach(({ marker }) => marker.remove());
     on.forEach(({ marker }) => marker.addTo(map));
+    rows.forEach((r, id) => { r.hidden = !ids.has(id); });
     $("#shown").textContent = String(on.length);
 
-    if (fit && on.length) {
-      map.fitBounds(L.latLngBounds(on.map(({ shop }) => [shop.lat, shop.lng] as [number, number])),
-        { padding: [60, 60], maxZoom: 15 });
+    if (on.length) {
+      map.flyToBounds(L.latLngBounds(on.map(({ shop }) => [shop.lat, shop.lng] as [number, number])),
+        { padding: [70, 70], maxZoom: 15, duration: reduce || firstRun ? 0 : 1.2, animate: !(reduce || firstRun) });
     }
+
+    // 札が上から落ちてきて刺さる
+    if (!reduce) {
+      const els = on.map(({ marker }) => marker.getElement()?.querySelector(".mk-in")).filter(Boolean) as Element[];
+      gsap.fromTo(els, { y: -40, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.9, ease: "back.out(2.2)", stagger: { each: 0.012, from: "random" }, delay: firstRun ? 0.5 : 0.25 });
+      const visibleRows = [...rows.values()].filter((r) => !r.hidden).slice(0, 14);
+      gsap.fromTo(visibleRows, { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.9, ease: EASE_OUT, stagger: 0.03, overwrite: true });
+    }
+    $("#list").scrollTop = 0;
+    firstRun = false;
   }
 
-  function setFilter(key: "genre" | "area", val: string, fit = true) {
-    state[key] = val;
-    $$(`.chip[data-key="${key}"]`).forEach((c) =>
-      c.setAttribute("aria-pressed", String(c.dataset.val === val)));
-    apply(fit);
-  }
-
-  $$<HTMLElement>(".chip").forEach((b) =>
-    b.addEventListener("click", () =>
-      setFilter(b.dataset.key as "genre" | "area", b.dataset.val!)));
+  fg.addEventListener("change", apply);
+  fa.addEventListener("change", apply);
 
   // 詳細検索から引き継いだ条件を反映（複数選択のうち先頭だけ使う）
   {
     const p = new URLSearchParams(location.search);
     const first = (k: string) => (p.get(k) ?? "").split(",").filter(Boolean)[0];
     const g = first("genre"), a = first("area");
-    if (g) setFilter("genre", g, false);
-    if (a) setFilter("area", a, false);
+    if (g && [...fg.options].some((o) => o.value === g)) fg.value = g;
+    if (a && [...fa.options].some((o) => o.value === a)) fa.value = a;
   }
 
   apply();

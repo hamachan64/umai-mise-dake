@@ -1,251 +1,448 @@
 ---
 import Base from "../layouts/Base.astro";
-import Marquee from "../components/Marquee.astro";
-import ShopCard from "../components/ShopCard.astro";
-import ShopModal from "../components/ShopModal.astro";
-import { SHOPS, GENRE_LIST, AREA_LIST, iconOf } from "../data/shops";
+import Seal from "../components/Seal.astro";
+import Wall from "../components/Wall.astro";
+import ShopRow from "../components/ShopRow.astro";
+import { SHOPS, GENRE_LIST, AREA_LIST, kanjiOf, toneOf, onomaOf } from "../data/shops";
 import { url } from "../lib/url";
 
 const countBy = (key: "genre" | "area", v: string) =>
   SHOPS.filter((s) => s[key] === v).length;
 
-// ヒーローに散らす切り抜きの位置（中央はテキストなので空ける）
-const spots = [
-  [5, 3, 86], [25, 11, 60], [50, 2, 94], [72, 12, 58], [87, 5, 72],
-  [3, 85, 78], [21, 93, 56], [46, 83, 90], [67, 93, 62], [85, 81, 74],
-  [1, 31, 50], [93, 45, 52],
-] as const;
-const pool = [...GENRE_LIST.map(iconOf), "🍖", "🍤", "🥢", "🍶", "🍢", "🥟"];
+// エリアは件数の多い順に並べる（55件以上あるので、よく使うものを先に）
+const areas = [...AREA_LIST].sort((a, b) => countBy("area", b) - countBy("area", a) || a.localeCompare(b, "ja"));
+const updated = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit" }).replace(/\//g, ".").replace(/\.$/, "");
+const LIMIT = 30;
+const N = String(SHOPS.length).padStart(3, "0");
 ---
 
 <Base title="うまい店だけ。｜わたしのオススメ飲食店" current="home">
 
-  <div id="loader">
-    <svg class="drop" viewBox="0 0 200 226" aria-hidden="true">
-      <path d="M100 4 C138 62 180 100 180 140 a80 80 0 1 1 -160 0 c0 -40 42 -78 80 -136 z" fill="#2CC1CC" />
-      <text x="100" y="158" text-anchor="middle" font-size="52">🔥</text>
-    </svg>
-    <div class="loading-word" id="loadWord"></div>
+  <div class="intro" id="intro" aria-hidden="true">
+    <div class="intro-c">
+      <Seal size="64px" class="worn" />
+      <span class="intro-n" id="introN">000</span>
+    </div>
+    <div class="intro-foot mono"><span>Umai Mise Dake</span><span>Loading the index</span></div>
   </div>
 
-  <!-- ============ ヒーロー ============ -->
-  <section class="hero" id="top">
-    <div class="cutouts" aria-hidden="true">
-      {spots.map(([t, l, s], i) => (
-        <span
-          class="cutout"
-          style={`top:${t}%;left:${l}%;--s:${s}px;--r:${i % 2 ? 9 : -11}deg;` +
-                 `--d:${(5 + (i % 4) * 0.9).toFixed(1)}s;--dl:${(i * 0.35).toFixed(2)}s`}
-        >{pool[i % pool.length]}</span>
-      ))}
-    </div>
-
-    <div class="wrap inner">
-      <svg class="drop-badge" viewBox="0 0 200 226" role="img" aria-label={`オススメ${SHOPS.length}軒`}>
-        <path d="M100 4 C138 62 180 100 180 140 a80 80 0 1 1 -160 0 c0 -40 42 -78 80 -136 z" fill="#2CC1CC" />
-        <text x="100" y="102" text-anchor="middle" fill="#fff" font-family="Montserrat, sans-serif" font-weight="700" font-size="8" letter-spacing="1.4">ONLY THE GOOD ONES</text>
-        <text x="100" y="128" text-anchor="middle" font-size="24">🔥</text>
-        <text id="dropNum" x="100" y="176" text-anchor="middle" fill="#fff" font-family="Montserrat, sans-serif" font-weight="800" font-size="44" letter-spacing="-1">0</text>
-        <text x="100" y="192" text-anchor="middle" fill="#fff" font-family="Montserrat, sans-serif" font-weight="700" font-size="7.5" letter-spacing="1.9" opacity=".9">SHOPS SELECTED</text>
-      </svg>
-
-      <h1 id="h1"></h1>
-      <p class="sub">自分の足で通って、人にすすめたくなった店だけ。</p>
-
-      <div class="stats">
-        <div><b id="s1">0</b><small>Shops</small></div>
-        <div><b id="s2">0</b><small>Genres</small></div>
-        <div><b id="s3">0</b><small>Areas</small></div>
+  <main id="main">
+    <!-- ============ ヒーロー ============ -->
+    <section class="hero shell" id="top">
+      <div class="hero-meta mono" data-hero>
+        <span>No.<b>001—{N}</b></span>
+        <span>Tokyo, Japan</span>
+        <span>A personal gourmet index</span>
+        <span>Updated <b>{updated}</b></span>
       </div>
 
-      <a class="scroll-cue" href="#about"><span>SCROLL</span><i></i></a>
-    </div>
-  </section>
+      <h1 class="hero-title" data-lines="manual" aria-label="「また行きたい」だけを、ここに。">
+        <span class="hl" aria-hidden="true">
+          <span class="ln"><span class="ln-i">「また</span></span><span class="ln"><span class="ln-i"><em>行きたい</em>」</span></span>
+        </span>
+        <span class="hl" aria-hidden="true">
+          <span class="ln"><span class="ln-i">だけを、</span></span><span class="ln"><span class="ln-i">ここに。</span></span>
+        </span>
+        <span class="hero-seal" id="heroSeal"><Seal size="100%" class="worn" /></span>
+      </h1>
 
-  <!-- ============ キービジュアル ============ -->
-  <section class="kv" id="about">
-    <div class="wrap">
-      <div class="kv-inner reveal">
-        <div class="kv-photo">
-          <span class="big">🍽</span>
-          <svg class="kv-swoosh" viewBox="0 0 200 120" aria-hidden="true">
-            <path d="M8 8C8 70 60 108 130 108c46 0 66-24 66-48" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".9" />
-          </svg>
+      <div class="hero-foot" data-hero>
+        <p class="hero-lede">
+          点数でも行列の長さでもなく、自分の足で通って、<br />
+          人にすすめたくなった店だけを並べた個人の目録です。
+        </p>
+        <div class="hero-stats">
+          <div><b data-count={SHOPS.length}>{SHOPS.length}</b><small class="mono">Shops</small></div>
+          <div><b data-count={GENRE_LIST.length}>{GENRE_LIST.length}</b><small class="mono">Genres</small></div>
+          <div><b data-count={AREA_LIST.length}>{AREA_LIST.length}</b><small class="mono">Areas</small></div>
         </div>
-        <div class="kv-text">
-          <p class="script">Tasty Days!</p>
-          <h2>うまい店は、<span class="hl-box">誰かに言いたく</span>なる。</h2>
-          <p>食べログの点数でも、行列の長さでもなく、「自分がまた行った店」だけを並べたリストです。</p>
-          <p>条件を細かく決めたいときは詳細検索、位置から選びたいときは地図をどうぞ。</p>
-          <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px">
-            <a class="pill ghost" href={url("search")}>詳細検索する →</a>
-            <button type="button" class="pill ghost" data-random>ランダムで1軒 →</button>
+        <a class="hero-cue mono" href="#about" aria-label="下へスクロール"><span>Scroll</span><i></i></a>
+      </div>
+    </section>
+
+    <!-- ============ 壁の品書き ============ -->
+    <Wall />
+
+    <!-- ============ この目録について ============ -->
+    <section class="about shell" id="about">
+      <div class="about-grid">
+        <p class="mono eyebrow" data-fade><span class="dot"></span>この目録について<span class="dim">— About</span></p>
+        <p class="about-text" data-scrub>
+          食べログの点数でも、行列の長さでもない。もう一度、<em>自分の足で</em>戻った店だけを、ここに残しています。
+        </p>
+        <p class="about-sub" data-fade>
+          ジャンルとエリアでざっくり選ぶなら、このすぐ下の目録から。キーワードや予算で細かく決めたいときは検索、今いる場所から探すなら地図へ。迷ったら、一軒引いてみてください。
+        </p>
+        <div class="about-links" data-fade="0.1">
+          <a class="link" href={url("search")}>条件で探す<span class="arr">→</span></a>
+          <a class="link" href={url("map")}>地図で探す<span class="arr">→</span></a>
+          <button type="button" class="link" data-random>今日の一軒を引く<span class="arr">→</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 目録 ============ -->
+    <section class="index" id="index" aria-labelledby="indexTitle">
+      <div class="shell">
+        <div class="index-head">
+          <h2 class="index-title" id="indexTitle" data-lines>
+            <span class="ln"><span class="ln-i">目録</span></span><span class="it">Index</span>
+          </h2>
+          <p class="index-count" data-fade>
+            <span class="n"><em id="shown" style="font-style:normal">{SHOPS.length}</em><span> / {SHOPS.length}</span></span>
+            <small class="mono">Shops in the list</small>
+          </p>
+        </div>
+      </div>
+
+      <div class="fbar" id="fbar">
+        <div class="shell fbar-in">
+          <div class="tabs" id="tabs" role="toolbar" aria-label="ジャンルで絞り込む">
+            <button type="button" class="tab" data-genre-tab="all" aria-pressed="true">すべて<sup>{SHOPS.length}</sup></button>
+            {GENRE_LIST.map((g) => (
+              <button type="button" class="tab" data-genre-tab={g} aria-pressed="false">{g}<sup>{countBy("genre", g)}</sup></button>
+            ))}
+            <span class="tab-ink" id="tabInk" aria-hidden="true"></span>
+          </div>
+          <div class="fbar-side">
+            <button type="button" class="area-btn" id="areaBtn" aria-expanded="false" aria-controls="areaPop">
+              <span class="mono lbl">Area</span><span id="areaLabel">すべてのエリア</span>
+              <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <Marquee />
-
-  <!-- ============ 絞り込み ============ -->
-  <nav class="filters" id="filters" aria-label="絞り込み">
-    <div class="wrap">
-      <div class="frow">
-        <div class="flabel">Genre</div>
-        <div class="chips">
-          <button type="button" class="chip" data-key="genre" data-val="all" aria-pressed="true">すべて<span class="n">{SHOPS.length}</span></button>
-          {GENRE_LIST.map((g) => (
-            <button type="button" class="chip" data-key="genre" data-val={g} aria-pressed="false">{g}<span class="n">{countBy("genre", g)}</span></button>
-          ))}
+        <div class="area-pop" id="areaPop" hidden data-lenis-prevent>
+          <ul>
+            <li><button type="button" data-area-opt="all" aria-pressed="true">すべて<span class="mono">{SHOPS.length}</span></button></li>
+            {areas.map((a) => (
+              <li><button type="button" data-area-opt={a} aria-pressed="false">{a}<span class="mono">{countBy("area", a)}</span></button></li>
+            ))}
+          </ul>
         </div>
       </div>
-      <div class="frow">
-        <div class="flabel">Area</div>
-        <div class="chips">
-          <button type="button" class="chip" data-key="area" data-val="all" aria-pressed="true">すべて<span class="n">{SHOPS.length}</span></button>
-          {AREA_LIST.map((a) => (
-            <button type="button" class="chip" data-key="area" data-val={a} aria-pressed="false">{a}<span class="n">{countBy("area", a)}</span></button>
-          ))}
+
+      <div class="shell">
+        <div class="rows" id="rows">
+          {SHOPS.map((s, i) => <ShopRow shop={s} hidden={i >= LIMIT} />)}
+        </div>
+        <button type="button" class="more" id="more">
+          <span id="moreLabel">残り{SHOPS.length - LIMIT}軒を見る</span><i aria-hidden="true">+</i>
+        </button>
+        <div class="empty" id="empty" hidden>
+          <b aria-hidden="true">無</b>
+          <p>この条件のお店は、まだありません。</p>
+          <small>ジャンルかエリアを「すべて」に戻すと全件出ます。</small>
         </div>
       </div>
-    </div>
-  </nav>
 
-  <!-- ============ 一覧 ============ -->
-  <main class="wrap" id="list">
-    <div class="list-head">
-      <div>
-        <p class="label">Recommended</p>
-        <h2 class="h-jp">オススメ一覧</h2>
+      <div class="peek" id="peek" aria-hidden="true">
+        <img class="peek-img" id="peekImg" alt="" hidden />
+        <div class="peek-top mono"><span id="peekNo"></span><span>Umai</span></div>
+        <span class="peek-k" id="peekK"></span>
+        <span class="peek-on" id="peekOn"></span>
+        <p class="peek-dish"><span class="mono">これを頼む</span><span id="peekDish"></span></p>
       </div>
-      <div class="count">
-        <em id="shown">{SHOPS.length}</em> / <span>{SHOPS.length}</span> SHOPS
-        <a class="reset" href={url("search")} style="margin-left:14px">もっと細かく探す →</a>
-      </div>
-    </div>
+    </section>
 
-    <div class="grid" id="grid">
-      {SHOPS.map((s, i) => <ShopCard shop={s} index={i} />)}
-      <div class="empty" id="empty" hidden>
-        <span class="big">🍽</span>
-        <p>この条件のお店は、まだありません。</p>
-        <small>ジャンルかエリアを「すべて」に戻すと全件出ます。</small>
+    <!-- ============ ジャンル図鑑 ============ -->
+    <section class="book" id="book" aria-labelledby="bookTitle">
+      <div class="shell">
+        <div class="book-head">
+          <p class="mono eyebrow" data-fade><span class="dot"></span>ジャンル図鑑<span class="dim">— {GENRE_LIST.length} genres, one letter each</span></p>
+          <h2 class="book-title" id="bookTitle" data-lines>
+            <span class="ln"><span class="ln-i">一文字で、</span></span>
+            <span class="ln"><span class="ln-i">口の中が想像できる。</span></span>
+          </h2>
+          <p class="book-lede" data-fade="0.15">麺、鮨、焼、甘。ジャンルをそれぞれ一文字の漢字にしました。選ぶと、そのジャンルだけの目録に切り替わります。</p>
+        </div>
       </div>
-    </div>
-  </main>
-
-  <!-- ============ ジャンル図鑑 ============ -->
-  <div class="arch" aria-hidden="true"><span></span><span></span></div>
-  <section class="zukan" id="zukan">
-    <div class="wrap">
-      <div class="title reveal">
-        <span class="script">Genre Book</span>
-        <small>ジャンル図鑑</small>
-      </div>
-      <p class="lead reveal">ちょっと「変」わった切り口で、ジャンルから探す。<br />とにかく口の中がたのしいのだ。</p>
-      <ul class="zlist reveal">
+      <ul class="book-grid">
         {GENRE_LIST.map((g) => (
           <li>
-            <button type="button" data-jump-genre={g}>
-              <span class="big">{iconOf(g)}</span>
-              <span class="nm">{g}<br />{countBy("genre", g)}軒</span>
+            <button type="button" class="gk" data-jump-genre={g} style={`--tone:var(--${toneOf(g)})`}>
+              <span class="gk-top"><span>{g}</span><span class="mono">{String(countBy("genre", g)).padStart(2, "0")}</span></span>
+              <span class="gk-k" aria-hidden="true">{kanjiOf(g)}</span>
+              <span class="gk-on" aria-hidden="true">{onomaOf(g)}</span>
             </button>
           </li>
         ))}
+        {GENRE_LIST.length % 4 !== 0 && (
+          <li class="cta" style={`--span:${4 - (GENRE_LIST.length % 4)}`}>
+            <a class="gk-cta" href={url("search")}>
+              <span class="mono">Advanced search</span>
+              <b>ジャンルを掛け合わせて、<br />もっと細かく探す。</b>
+              <span class="arr" aria-hidden="true">→</span>
+            </a>
+          </li>
+        )}
       </ul>
-      <a class="pill" href={url("search")}>詳細検索でさらに絞る →</a>
-    </div>
-  </section>
-
-  <ShopModal />
+    </section>
+  </main>
 </Base>
 
 <script>
-  import { SHOPS, GENRE_LIST, AREA_LIST } from "../data/shops";
+  import { SHOPS } from "../data/shops";
+  import { gsap, ScrollTrigger, $, $$, reduce, fine, lenis, scrollToEl, revealLines, EASE_OUT, EASE_IO } from "../scripts/motion";
 
-  const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
-  const $$ = <T extends HTMLElement>(s: string) => [...document.querySelectorAll<T>(s)];
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const LIMIT = 30;
+  const root = document.documentElement;
 
-  /* ---- ローディング ---- */
-  $("#loadWord").innerHTML = [..."たべにいこう"]
-    .map((c, i) => `<span style="animation-delay:${i * 85}ms">${c}</span>`).join("");
-  const hideLoader = () => $("#loader").classList.add("done");
-  reduce ? hideLoader() : setTimeout(hideLoader, 1600);
-
-  /* ---- 見出しを1文字ずつ ---- */
-  {
-    const parts = [
-      { t: "「また」", q: true }, { t: "行きたい店を、", q: false },
-      { br: true }, { t: "「ぜんぶ」", q: true }, { t: "ここに。", q: false },
-    ];
-    let i = 0;
-    $("#h1").innerHTML = parts.map((p) => {
-      if ("br" in p) return "<br>";
-      const chars = [...p.t!].map((c) =>
-        `<span class="ch" style="animation-delay:${(i++) * 42 + 700}ms">${c}</span>`).join("");
-      return p.q ? `<span class="q">${chars}</span>` : chars;
-    }).join("");
+  /* =================================================================
+     オープニング → ヒーロー
+     ================================================================= */
+  function heroIn(delay = 0) {
+    const tl = gsap.timeline({ delay });
+    tl.add(revealLines($(".hero-title")), 0);
+    if (reduce) return;
+    tl.fromTo("#heroSeal", { scale: 2.1, autoAlpha: 0, rotate: -34 },
+      { scale: 1, autoAlpha: 1, rotate: -9, duration: 0.5, ease: "power4.in" }, 0.75)
+      .fromTo(".hero-title", { x: 0 }, { keyframes: { x: [-3, 3, -1, 0] }, duration: 0.24, ease: "none" }, 1.25)
+      .fromTo("[data-hero]", { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 1.3, ease: EASE_OUT, stagger: 0.1 }, 0.35);
+    $$<HTMLElement>("[data-count]").forEach((el, i) => {
+      const o = { v: 0 };
+      tl.to(o, {
+        v: Number(el.dataset.count), duration: 1.6, ease: "power3.out",
+        onUpdate: () => { el.textContent = String(Math.round(o.v)); },
+      }, 0.6 + i * 0.08);
+    });
   }
 
-  /* ---- 数字カウントアップ ---- */
-  const countUp = (el: HTMLElement, target: number) => {
-    if (reduce) { el.textContent = String(target); return; }
-    let n = 0;
-    const step = () => {
-      n += Math.ceil((target - n) / 7) || 1;
-      if (n >= target) { el.textContent = String(target); return; }
-      el.textContent = String(n);
-      requestAnimationFrame(step);
-    };
-    setTimeout(step, 700);
-  };
-  countUp($("#s1"), SHOPS.length);
-  countUp($("#s2"), GENRE_LIST.length);
-  countUp($("#s3"), AREA_LIST.length);
-  countUp($("#dropNum"), SHOPS.length);
+  if (!reduce) gsap.set(["#heroSeal", "[data-hero]"], { autoAlpha: 0 });
 
-  /* ---- 絞り込み（サーバー描画済みのカードを出し入れする） ---- */
-  const state = { genre: "all", area: "all" };
-  const cards = $$<HTMLElement>(".card");
+  if (reduce || root.classList.contains("seen")) {
+    heroIn(0.1);
+  } else {
+    try { sessionStorage.setItem("umai:intro", "1"); } catch {}
+    const n = $("#introN");
+    const o = { v: 0 };
+    lenis?.stop();
+    gsap.timeline({ onComplete: () => { $("#intro").remove(); lenis?.start(); } })
+      .to(o, {
+        v: SHOPS.length, duration: 1.3, ease: "power2.inOut",
+        onUpdate: () => { n.textContent = String(Math.round(o.v)).padStart(3, "0"); },
+      })
+      .fromTo("#intro .seal", { scale: 2.2, autoAlpha: 0, rotate: -30 }, { scale: 1, autoAlpha: 1, rotate: -6, duration: 0.42, ease: "power4.in" }, 0.85)
+      .to("#intro", { clipPath: "inset(0% 0% 100% 0%)", duration: 1.1, ease: EASE_IO }, "+=0.25")
+      .add(() => heroIn(0), "<0.45");
+  }
 
-  const io = new IntersectionObserver(
-    (es) => es.forEach((e) => {
-      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
-    }),
-    { threshold: 0.12, rootMargin: "0px 0px -40px" },
-  );
+  /* =================================================================
+     壁の品書き：常にゆっくり流れ、スクロールの勢いで速まり、札が揺れる
+     ================================================================= */
+  {
+    const stage = $("#wall");
+    const track = $("#wallTrack");
+    const set = track.firstElementChild as HTMLElement;
+    let W = set.offsetWidth;
+    let x = 0, swing = 0, base = 0.55, baseTarget = 0.55, dragV = 0;
+    let visible = false, dragging = false, moved = 0, lastX = 0;
+    const wrap = (v: number) => ((v % W) - W) % W;
+
+    new ResizeObserver(() => { W = set.offsetWidth; }).observe(set);
+    new IntersectionObserver(([e]) => { visible = !!e?.isIntersecting; }).observe(stage);
+
+    if (!reduce) {
+      gsap.ticker.add((_t, dt) => {
+        if (!visible) return;
+        const k = dt / 16.67;
+        base += (baseTarget - base) * 0.05;
+        const sv = lenis?.velocity ?? 0;
+        const v = dragging ? dragV : base + sv * 0.35 + dragV;
+        dragV *= 0.92;
+        if (!dragging) x = wrap(x - v * k);
+        // 速さの変化に札がついてこられず、後ろに振れる
+        const target = gsap.utils.clamp(-9, 9, -(v - base) * 0.9);
+        swing += (target - swing) * 0.08 * k;
+        track.style.transform = `translate3d(${x}px,0,0)`;
+        track.style.setProperty("--swing", `${swing.toFixed(2)}deg`);
+      });
+
+      stage.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") baseTarget = 0.12; });
+      stage.addEventListener("pointerleave", () => { baseTarget = 0.55; });
+
+      stage.addEventListener("pointerdown", (e) => {
+        dragging = true; moved = 0; lastX = e.clientX;
+      });
+      addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - lastX;
+        lastX = e.clientX;
+        moved += Math.abs(dx);
+        x = wrap(x + dx);
+        dragV = -dx;
+      });
+      addEventListener("pointerup", () => { dragging = false; });
+      // ドラッグした直後のクリックで詳細が開かないように
+      stage.addEventListener("click", (e) => { if (moved > 6) { e.stopPropagation(); e.preventDefault(); } }, true);
+      stage.addEventListener("dragstart", (e) => e.preventDefault());
+    } else {
+      stage.style.overflowX = "auto";
+      (track.lastElementChild as HTMLElement).hidden = true;
+    }
+  }
+
+  /* =================================================================
+     目録：絞り込み
+     ================================================================= */
+  const state = { genre: "all", area: "all", expanded: false };
+  const rows = $$<HTMLElement>("#rows .row");
+  const tabs = $("#tabs");
+  const ink = $("#tabInk");
+
+  function moveInk(animate = true) {
+    const t = $(`.tab[aria-pressed="true"]`, tabs);
+    gsap.to(ink, { x: t.offsetLeft, width: t.offsetWidth, duration: animate && !reduce ? 0.8 : 0, ease: EASE_OUT });
+    if (animate) tabs.scrollTo({ left: t.offsetLeft - 40, behavior: reduce ? "auto" : "smooth" });
+  }
+
+  function render() {
+    const hits = rows.filter((r) =>
+      (state.genre === "all" || r.dataset.genre === state.genre) &&
+      (state.area === "all" || r.dataset.area === state.area));
+    const show = new Set(state.expanded ? hits : hits.slice(0, LIMIT));
+    rows.forEach((r) => { r.hidden = !show.has(r); });
+    const rest = hits.length - show.size;
+    $("#more").hidden = rest <= 0;
+    $("#moreLabel").textContent = `残り${rest}軒を見る`;
+    $("#empty").hidden = hits.length > 0;
+
+    const el = $("#shown");
+    const o = { v: Number(el.textContent) };
+    gsap.to(o, { v: hits.length, duration: reduce ? 0 : 0.8, ease: "power3.out", onUpdate: () => { el.textContent = String(Math.round(o.v)); } });
+    return [...show];
+  }
 
   function apply() {
-    let shown = 0;
-    cards.forEach((c) => {
-      const ok = (state.genre === "all" || c.dataset.genre === state.genre)
-              && (state.area  === "all" || c.dataset.area  === state.area);
-      c.classList.toggle("hide", !ok);
-      if (ok) { shown++; io.observe(c); }
+    const list = $("#rows");
+    const fb = $("#fbar").getBoundingClientRect();
+    // 一覧の途中で切り替えたら、一覧の頭に戻す
+    if (list.getBoundingClientRect().top < fb.bottom - 2) scrollToEl(list, -(fb.height + $("#hd").offsetHeight));
+    if (reduce) { render(); ScrollTrigger.refresh(); return; }
+    gsap.to([list, "#more", "#empty"], {
+      autoAlpha: 0, y: 10, duration: 0.25, ease: "power2.in",
+      onComplete: () => {
+        const shown = render();
+        gsap.set([list, "#more", "#empty"], { autoAlpha: 1, y: 0 });
+        gsap.fromTo(shown.slice(0, 12), { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1, ease: EASE_OUT, stagger: 0.035 });
+        gsap.fromTo(["#more", "#empty"], { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6, delay: 0.3 });
+        ScrollTrigger.refresh();
+      },
     });
-    $("#shown").textContent = String(shown);
-    $("#empty").hidden = shown > 0;
   }
 
-  function setFilter(key: "genre" | "area", val: string) {
-    state[key] = val;
-    $$(`.chip[data-key="${key}"]`).forEach((c) =>
-      c.setAttribute("aria-pressed", String(c.dataset.val === val)));
+  function setGenre(g: string) {
+    state.genre = g; state.expanded = false;
+    $$(".tab", tabs).forEach((t) => t.setAttribute("aria-pressed", String(t.dataset.genreTab === g)));
+    moveInk();
+    apply();
+  }
+  function setArea(a: string) {
+    state.area = a; state.expanded = false;
+    $$("[data-area-opt]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.areaOpt === a)));
+    $("#areaLabel").textContent = a === "all" ? "すべてのエリア" : a;
     apply();
   }
 
-  $$<HTMLElement>(".chip").forEach((b) =>
-    b.addEventListener("click", () =>
-      setFilter(b.dataset.key as "genre" | "area", b.dataset.val!)));
+  $$(".tab", tabs).forEach((t) => t.addEventListener("click", () => setGenre(t.dataset.genreTab!)));
+  document.fonts?.ready.then(() => moveInk(false));
+  addEventListener("resize", () => moveInk(false));
+  moveInk(false);
 
-  $$<HTMLElement>("[data-jump-genre]").forEach((b) =>
-    b.addEventListener("click", () => {
-      setFilter("genre", b.dataset.jumpGenre!);
-      setFilter("area", "all");
-      $("#list").scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
-    }));
+  // エリアのポップオーバー
+  {
+    const btn = $("#areaBtn"), pop = $("#areaPop");
+    const toggle = (open: boolean) => {
+      btn.setAttribute("aria-expanded", String(open));
+      if (open) {
+        pop.hidden = false;
+        if (!reduce) gsap.fromTo(pop, { clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0% 0)", duration: 0.7, ease: EASE_IO });
+        if (!reduce) gsap.fromTo($$("li", pop), { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: 0.6, ease: EASE_OUT, stagger: 0.006, delay: 0.2 });
+      } else {
+        gsap.to(pop, { clipPath: "inset(0 0 100% 0)", duration: reduce ? 0 : 0.45, ease: "power3.in", onComplete: () => { pop.hidden = true; } });
+      }
+    };
+    btn.addEventListener("click", () => toggle(btn.getAttribute("aria-expanded") !== "true"));
+    $$("[data-area-opt]").forEach((b) => b.addEventListener("click", () => { setArea(b.dataset.areaOpt!); toggle(false); btn.focus(); }));
+    document.addEventListener("click", (e) => {
+      if (!pop.hidden && !(e.target as HTMLElement).closest("#areaPop, #areaBtn")) toggle(false);
+    });
+    addEventListener("keydown", (e) => { if (e.key === "Escape" && !pop.hidden) { toggle(false); btn.focus(); } });
+  }
 
-  apply();
+  $("#more").addEventListener("click", () => {
+    const before = new Set(rows.filter((r) => !r.hidden));
+    state.expanded = true;
+    const shown = render();
+    const added = shown.filter((r) => !before.has(r));
+    if (!reduce) gsap.fromTo(added.slice(0, 14), { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1, ease: EASE_OUT, stagger: 0.035 });
+    added[0]?.focus({ preventScroll: true });
+    ScrollTrigger.refresh();
+  });
+
+  // ジャンル図鑑から目録へ
+  $$("[data-jump-genre]").forEach((b) => b.addEventListener("click", () => {
+    state.area = "all";
+    $$("[data-area-opt]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.areaOpt === "all")));
+    $("#areaLabel").textContent = "すべてのエリア";
+    scrollToEl($("#index"), 0);
+    setTimeout(() => setGenre(b.dataset.jumpGenre!), reduce ? 0 : 500);
+  }));
+
+  // 一覧の行は、スクロールで入ってきたら下からそろって出る
+  if (!reduce) {
+    ScrollTrigger.batch(rows.slice(0, LIMIT), {
+      start: "top 94%", once: true,
+      onEnter: (b) => gsap.fromTo(b, { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 1.1, ease: EASE_OUT, stagger: 0.06, overwrite: true }),
+    });
+  }
+
+  /* =================================================================
+     カーソルについてくる札
+     ================================================================= */
+  if (fine && !reduce) {
+    const peek = $("#peek");
+    const list = $("#rows");
+    const xTo = gsap.quickTo(peek, "x", { duration: 0.7, ease: "power3.out" });
+    const yTo = gsap.quickTo(peek, "y", { duration: 0.7, ease: "power3.out" });
+    const rTo = gsap.quickTo(peek, "rotate", { duration: 0.9, ease: "power3.out" });
+    let lx = 0, cur = "";
+    let shown = false;
+
+    gsap.set(peek, { x: innerWidth / 2, y: innerHeight / 2 });
+
+    list.addEventListener("pointermove", (e) => {
+      const px = e.clientX + 170 > innerWidth - 20 ? e.clientX - 170 : e.clientX + 170;
+      xTo(px); yTo(e.clientY);
+      rTo(gsap.utils.clamp(-14, 14, (e.clientX - lx) * 0.6));
+      lx = e.clientX;
+      const row = (e.target as HTMLElement).closest<HTMLElement>(".row");
+      if (!row || row.dataset.shop === cur) return;
+      cur = row.dataset.shop!;
+      const d = row.dataset;
+      peek.style.setProperty("--tone", `var(--${d.tone})`);
+      $("#peekNo").textContent = `No.${d.no}`;
+      $("#peekOn").textContent = d.onoma!;
+      $("#peekDish").textContent = d.dish!;
+      const img = $<HTMLImageElement>("#peekImg");
+      peek.classList.toggle("has-photo", !!d.photo);
+      img.hidden = !d.photo;
+      if (d.photo) img.src = d.photo;
+      const k = $("#peekK");
+      if (k.textContent !== d.k) {
+        k.textContent = d.k!;
+        if (shown) gsap.fromTo(k, { yPercent: 35, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: 0.6, ease: EASE_OUT });
+      }
+      if (!shown) {
+        shown = true;
+        gsap.set(peek, { x: px, y: e.clientY });
+        gsap.to(peek, { autoAlpha: 1, scale: 1, duration: 0.6, ease: EASE_OUT });
+      }
+    });
+    const hide = () => {
+      shown = false; cur = "";
+      gsap.to(peek, { autoAlpha: 0, scale: 0.6, duration: 0.4, ease: "power3.in" });
+    };
+    list.addEventListener("pointerleave", hide);
+    addEventListener("scroll", () => { if (shown && !list.matches(":hover")) hide(); }, { passive: true });
+  }
 </script>

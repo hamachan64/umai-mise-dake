@@ -1,0 +1,49 @@
+---
+import { url } from "../lib/url";
+import { kanjiOf, toneOf, onomaOf, yen, bandOf, noOf, type Shop } from "../data/shops";
+
+interface Props { shop: Shop; compact?: boolean; hidden?: boolean }
+const { shop: s, compact = false, hidden = false } = Astro.props;
+
+// 詳細検索のフリーワード用に、検索対象をまとめておく
+const haystack = [s.name, s.yomi, s.genre, s.area, s.access, s.dish, s.memo]
+  .join(" ").toLowerCase();
+const tone = toneOf(s.genre);
+---
+
+<button
+  type="button"
+  class:list={["row", { compact }]}
+  hidden={hidden}
+  data-shop={s.id}
+  data-genre={s.genre}
+  data-area={s.area}
+  data-score={s.score}
+  data-band={bandOf(s.budget)}
+  data-budget={s.budget}
+  data-name={s.name}
+  data-q={haystack}
+  data-k={kanjiOf(s.genre)}
+  data-tone={tone}
+  data-onoma={onomaOf(s.genre)}
+  data-dish={s.dish}
+  data-no={noOf(s.id)}
+  data-photo={s.photo ? url(s.photo) : undefined}
+  style={`--tone:var(--${tone})`}
+>
+  <span class="row-no mono">{noOf(s.id)}</span>
+  <span class="glyph" aria-hidden="true">{s.photo ? <img src={url(s.photo)} alt="" loading="lazy" /> : kanjiOf(s.genre)}</span>
+  <span class="row-name">
+    <span class="row-title">{s.name}</span>
+    <span class="row-sub">{s.genre}<i>/</i>{s.area}<i>/</i>{yen(s.budget)}</span>
+  </span>
+  <span class="row-genre">{s.genre}</span>
+  <span class="row-area">{s.area}<small>{s.access}</small></span>
+  <span class="row-budget mono">{yen(s.budget)}</span>
+  <span class="dots" aria-label={`推し度 5段階中${s.score}`}>
+    {[1, 2, 3, 4, 5].map((i) => <i class={i <= s.score ? "on" : ""}></i>)}
+  </span>
+  <span class="row-arrow" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.4" /></svg>
+  </span>
+</button>

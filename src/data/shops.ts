@@ -26,25 +26,25 @@ export type Shop = {
 
 export type Genre = keyof typeof GENRES;
 
-/* ジャンルごとの絵柄・食感オノマトペ。Notion DB「グルメリスト」のジャンル選択肢と
+/* ジャンルごとの絵柄・食感オノマトペ・一文字の漢字（k）・色（tone: shu/ai/matcha/karashi）。Notion DB「グルメリスト」のジャンル選択肢と
    1対1で対応させています。Notion側に選択肢を足したら、ここにも同じ名前で追加してください */
 export const GENRES = {
-  "ラーメン":         { icon: "🍜", o: "ズルッ" },
-  "そば・うどん":     { icon: "🥢", o: "つるっ" },
-  "寿司":             { icon: "🍣", o: "ぷりっ" },
-  "和食":             { icon: "🍱", o: "ほろり" },
-  "焼肉":             { icon: "🥩", o: "ジュージュー" },
-  "居酒屋":           { icon: "🍺", o: "ぷはー" },
-  "中華":             { icon: "🥟", o: "パラッ" },
-  "アジアン":         { icon: "🌶", o: "ヒリッ" },
-  "イタリアン":       { icon: "🍝", o: "もちっ" },
-  "バーガー・肉料理": { icon: "🍔", o: "がぶっ" },
-  "カレー":           { icon: "🍛", o: "ピリッ" },
-  "洋食":             { icon: "🍽", o: "じゅわっ" },
-  "パン":             { icon: "🥐", o: "さくっ" },
-  "スイーツ":         { icon: "🍰", o: "とろっ" },
-  "和菓子":           { icon: "🍡", o: "もちもち" },
-  "カフェ・喫茶":     { icon: "☕", o: "ほっ" },
+  "ラーメン":         { icon: "🍜", o: "ズルッ", k: "麺", tone: "karashi" },
+  "そば・うどん":     { icon: "🥢", o: "つるっ", k: "蕎", tone: "matcha" },
+  "寿司":             { icon: "🍣", o: "ぷりっ", k: "鮨", tone: "ai" },
+  "和食":             { icon: "🍱", o: "ほろり", k: "和", tone: "matcha" },
+  "焼肉":             { icon: "🥩", o: "ジュージュー", k: "焼", tone: "shu" },
+  "居酒屋":           { icon: "🍺", o: "ぷはー", k: "酒", tone: "ai" },
+  "中華":             { icon: "🥟", o: "パラッ", k: "華", tone: "shu" },
+  "アジアン":         { icon: "🌶", o: "ヒリッ", k: "亜", tone: "karashi" },
+  "イタリアン":       { icon: "🍝", o: "もちっ", k: "伊", tone: "matcha" },
+  "バーガー・肉料理": { icon: "🍔", o: "がぶっ", k: "肉", tone: "shu" },
+  "カレー":           { icon: "🍛", o: "ピリッ", k: "辛", tone: "karashi" },
+  "洋食":             { icon: "🍽", o: "じゅわっ", k: "洋", tone: "ai" },
+  "パン":             { icon: "🥐", o: "さくっ", k: "麦", tone: "karashi" },
+  "スイーツ":         { icon: "🍰", o: "とろっ", k: "甘", tone: "shu" },
+  "和菓子":           { icon: "🍡", o: "もちもち", k: "菓", tone: "matcha" },
+  "カフェ・喫茶":     { icon: "☕", o: "ほっ", k: "喫", tone: "ai" },
 } as const;
 
 export const SHOPS: Shop[] = [
@@ -183,6 +183,28 @@ export const AREA_LIST  = [...new Set(SHOPS.map((s) => s.area))];
 
 export const iconOf  = (g: string) => GENRES[g as Genre]?.icon ?? "🍽";
 export const onomaOf = (g: string) => GENRES[g as Genre]?.o ?? "うまい";
+export const kanjiOf = (g: string) => GENRES[g as Genre]?.k ?? "旨";
+export type Tone = "shu" | "ai" | "matcha" | "karashi";
+export const toneOf  = (g: string): Tone => (GENRES[g as Genre]?.tone as Tone) ?? "shu";
+
+/** 掲載番号（No.001〜）。SHOPS の並び順で振る */
+export const noOf = (id: string) =>
+  String(SHOPS.findIndex((s) => s.id === id) + 1).padStart(3, "0");
+
+/** 1200 → 「千二百円」。短冊メニュー用の漢数字 */
+export const kansuji = (n: number) => {
+  const d = "〇一二三四五六七八九";
+  const under = (x: number) => {
+    let s = "";
+    for (const [v, u] of [[1000, "千"], [100, "百"], [10, "十"]] as const) {
+      const q = Math.floor(x / v); x %= v;
+      if (q) s += (q > 1 ? d[q] : "") + u;
+    }
+    return s + (x ? d[x] : "");
+  };
+  const man = Math.floor(n / 10000), rest = n % 10000;
+  return (man ? under(man) + "万" : "") + under(rest) + "円";
+};
 
 /** 予算帯。詳細検索の絞り込みに使います */
 export const BUDGET_BANDS = [

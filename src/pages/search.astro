@@ -1,13 +1,13 @@
 ---
 import Base from "../layouts/Base.astro";
-import ShopCard from "../components/ShopCard.astro";
-import ShopModal from "../components/ShopModal.astro";
-import { SHOPS, GENRE_LIST, AREA_LIST, BUDGET_BANDS, bandOf, iconOf } from "../data/shops";
+import ShopRow from "../components/ShopRow.astro";
+import { SHOPS, GENRE_LIST, AREA_LIST, BUDGET_BANDS, bandOf, kanjiOf, toneOf } from "../data/shops";
 import { url } from "../lib/url";
 
 const countGenre = (g: string) => SHOPS.filter((s) => s.genre === g).length;
 const countArea  = (a: string) => SHOPS.filter((s) => s.area === a).length;
 const countBand  = (b: string) => SHOPS.filter((s) => bandOf(s.budget) === b).length;
+const areas = [...AREA_LIST].sort((a, b) => countArea(b) - countArea(a) || a.localeCompare(b, "ja"));
 ---
 
 <Base
@@ -15,122 +15,117 @@ const countBand  = (b: string) => SHOPS.filter((s) => bandOf(s.budget) === b).le
   description="ジャンル・エリア・予算・推し度・キーワードから、条件を組み合わせて店を探せます。"
   current="search"
 >
-  <section class="page-hero">
-    <div class="wrap">
-      <p class="label">Advanced Search</p>
-      <h1>詳細検索</h1>
-      <p>条件は組み合わせられます。絞った状態のURLはそのまま共有・ブックマークできます。</p>
-    </div>
-  </section>
+  <main id="main">
+    <section class="phero shell">
+      <div class="phero-grid">
+        <p class="mono eyebrow" data-fade><span class="dot"></span>Advanced search<span class="dim">— 02</span></p>
+        <h1 data-lines><span class="ln"><span class="ln-i">検索</span></span><span class="it">Search</span></h1>
+        <p class="phero-lede" data-fade="0.15">条件は組み合わせられます。絞った状態のURLは、そのまま共有やブックマークに使えます。</p>
+      </div>
+    </section>
 
-  <main class="wrap">
-    <form class="search-panel" id="sform" autocomplete="off">
-      <div class="srow" style="grid-template-columns:1fr;padding-top:4px">
-        <div class="qbox">
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <circle cx="11" cy="11" r="7" /><path d="M16.5 16.5 21 21" />
-          </svg>
-          <input type="search" id="q" name="q" placeholder="店名・駅名・メニュー・メモから探す（例：煮干し、ひとり、コハダ）" />
+    <div class="shell">
+      <form class="sform" id="sform" autocomplete="off" data-fade="0.2">
+        <label class="qbox">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5 21 21" /></svg>
+          <span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">キーワード</span>
+          <input type="search" id="q" name="q" placeholder="煮干し、ひとり、コハダ…" />
+          <kbd>/</kbd>
+        </label>
+
+        <div class="sgrid">
+          <fieldset data-group="genre">
+            <legend><b>ジャンル</b><span class="mono">Genre</span><button type="button" class="clr mono" data-clear="genre">Clear</button></legend>
+            <div class="opts">
+              {GENRE_LIST.map((g) => (
+                <label class="opt" style={`--tone:var(--${toneOf(g)})`}>
+                  <input type="checkbox" name="genre" value={g} />
+                  <span><b class="gl" aria-hidden="true">{kanjiOf(g)}</b>{g}<i>{countGenre(g)}</i></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset data-group="area">
+            <legend><b>エリア</b><span class="mono">Area</span><button type="button" class="clr mono" data-clear="area">Clear</button></legend>
+            <div class="opts scroll" data-lenis-prevent>
+              {areas.map((a) => (
+                <label class="opt">
+                  <input type="checkbox" name="area" value={a} />
+                  <span>{a}<i>{countArea(a)}</i></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset data-group="band">
+            <legend><b>予算</b><span class="mono">Budget</span><button type="button" class="clr mono" data-clear="band">Clear</button></legend>
+            <div class="opts">
+              {BUDGET_BANDS.map((b) => (
+                <label class="opt">
+                  <input type="checkbox" name="band" value={b.id} />
+                  <span>{b.label}<i>{countBand(b.id)}</i></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset data-group="score">
+            <legend><b>推し度</b><span class="mono">Score</span></legend>
+            <div class="opts">
+              {[["0", "すべて"], ["3", "★3以上"], ["4", "★4以上"], ["5", "★5のみ"]].map(([v, l], i) => (
+                <label class="opt">
+                  <input type="radio" name="score" value={v} checked={i === 0} />
+                  <span>{l}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+      </form>
+
+      <div class="sbar">
+        <p class="count"><b id="shown">{SHOPS.length}</b><span class="mono">/ {SHOPS.length} shops</span></p>
+        <div class="sbar-r">
+          <a class="link" href={url("search")} id="reset">条件をリセット</a>
+          <span class="select">
+            <select id="sort" aria-label="並び替え">
+              <option value="score">推し度が高い順</option>
+              <option value="budget-asc">予算が安い順</option>
+              <option value="budget-desc">予算が高い順</option>
+              <option value="name">店名順</option>
+            </select>
+          </span>
         </div>
       </div>
 
-      <div class="srow">
-        <div class="flabel">Genre</div>
-        <div class="opts">
-          {GENRE_LIST.map((g) => (
-            <label class="opt">
-              <input type="checkbox" name="genre" value={g} />
-              <span>{iconOf(g)} {g}<i class="n">{countGenre(g)}</i></span>
-            </label>
-          ))}
-        </div>
+      <div class="rows" id="grid">
+        {SHOPS.map((s) => <ShopRow shop={s} />)}
       </div>
 
-      <div class="srow">
-        <div class="flabel">Area</div>
-        <div class="opts">
-          {AREA_LIST.map((a) => (
-            <label class="opt">
-              <input type="checkbox" name="area" value={a} />
-              <span>{a}<i class="n">{countArea(a)}</i></span>
-            </label>
-          ))}
-        </div>
+      <div class="empty" id="nores" hidden>
+        <b aria-hidden="true">無</b>
+        <p>条件に合うお店が見つかりませんでした。</p>
+        <small>キーワードを短くするか、チェックを減らしてみてください。</small>
       </div>
 
-      <div class="srow">
-        <div class="flabel">Budget</div>
-        <div class="opts">
-          {BUDGET_BANDS.map((b) => (
-            <label class="opt">
-              <input type="checkbox" name="band" value={b.id} />
-              <span>{b.label}<i class="n">{countBand(b.id)}</i></span>
-            </label>
-          ))}
-        </div>
+      <div class="sfoot">
+        <a class="btn btn-ink" id="tomap" href={url("map")} data-magnetic>
+          <span class="roll" data-text="この条件を地図で見る"><span>この条件を地図で見る</span></span><span aria-hidden="true">→</span>
+        </a>
       </div>
-
-      <div class="srow">
-        <div class="flabel">Score</div>
-        <div class="opts">
-          {[["0", "すべて"], ["3", "★3以上"], ["4", "★4以上"], ["5", "★5のみ"]].map(([v, l], i) => (
-            <label class="opt">
-              <input type="radio" name="score" value={v} checked={i === 0} />
-              <span>{l}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-    </form>
-
-    <div class="sortbar">
-      <div class="count"><em id="shown">{SHOPS.length}</em> / <span>{SHOPS.length}</span> SHOPS</div>
-      <div style="display:flex;align-items:center;gap:14px">
-        <a class="reset" href={url("search")} id="reset">条件をリセット</a>
-        <select id="sort" aria-label="並び替え">
-          <option value="score">推し度が高い順</option>
-          <option value="budget-asc">予算が安い順</option>
-          <option value="budget-desc">予算が高い順</option>
-          <option value="name">店名順</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="grid" id="grid">
-      {SHOPS.map((s, i) => <ShopCard shop={s} index={i} />)}
-    </div>
-
-    <div class="nores" id="nores" hidden>
-      <span class="big">🍽</span>
-      <p>条件に合うお店が見つかりませんでした。</p>
-      <small>キーワードを短くするか、チェックを減らしてみてください。</small>
-    </div>
-
-    <div style="padding:44px 0 90px;text-align:center">
-      <a class="pill" id="tomap" href={url("map")}>この条件を地図で見る →</a>
     </div>
   </main>
-
-  <ShopModal />
 </Base>
 
 <script>
-  const $  = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
-  const $$ = <T extends HTMLElement>(s: string) => [...document.querySelectorAll<T>(s)];
+  import { gsap, $, $$, reduce, scrollToEl, ScrollTrigger, EASE_OUT } from "../scripts/motion";
 
   const form  = $<HTMLFormElement>("#sform");
   const q     = $<HTMLInputElement>("#q");
   const sort  = $<HTMLSelectElement>("#sort");
   const grid  = $("#grid");
-  const cards = $$<HTMLElement>(".card");
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const io = new IntersectionObserver(
-    (es) => es.forEach((e) => {
-      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
-    }),
-    { threshold: 0.12, rootMargin: "0px 0px -40px" },
-  );
+  const cards = $$<HTMLElement>(".row", grid);
 
   const checked = (name: string) =>
     $$<HTMLInputElement>(`input[name="${name}"]:checked`).map((i) => i.value);
@@ -168,6 +163,7 @@ const countBand  = (b: string) => SHOPS.filter((s) => bandOf(s.budget) === b).le
   }
 
   /* ---- 絞り込み＋並び替え ---- */
+  let first = true;
   function apply() {
     const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const g = new Set(checked("genre"));
@@ -175,6 +171,7 @@ const countBand  = (b: string) => SHOPS.filter((s) => bandOf(s.budget) === b).le
     const b = new Set(checked("band"));
     const minScore = Number(checked("score")[0] ?? 0);
 
+    const before = new Set(cards.filter((c) => !c.hidden));
     let shown = 0;
     cards.forEach((c) => {
       const d = c.dataset;
@@ -184,11 +181,11 @@ const countBand  = (b: string) => SHOPS.filter((s) => bandOf(s.budget) === b).le
         (!b.size || b.has(d.band!)) &&
         Number(d.score) >= minScore &&
         words.every((w) => d.q!.includes(w));
-      c.classList.toggle("hide", !ok);
-      if (ok) { shown++; io.observe(c); }
+      c.hidden = !ok;
+      if (ok) shown++;
     });
 
-    // 並び替えは表示中のカードをDOMごと並べ替える
+    // 並び替えは表示中の行をDOMごと並べ替える
     const dir = sort.value;
     const key = (c: HTMLElement) => {
       const d = c.dataset;
@@ -204,10 +201,21 @@ const countBand  = (b: string) => SHOPS.filter((s) => bandOf(s.budget) === b).le
       })
       .forEach((c) => grid.append(c));
 
-    $("#shown").textContent = String(shown);
+    // 新しく出てきた行だけ、そっと持ち上げる
+    if (!first && !reduce) {
+      const entered = cards.filter((c) => !c.hidden && !before.has(c)).slice(0, 12);
+      gsap.fromTo(entered, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.9, ease: EASE_OUT, stagger: 0.03, overwrite: true });
+    }
+    first = false;
+
+    const el = $("#shown");
+    const o = { v: Number(el.textContent) };
+    gsap.to(o, { v: shown, duration: reduce ? 0 : 0.6, ease: "power3.out", overwrite: true, onUpdate: () => { el.textContent = String(Math.round(o.v)); } });
     $("#nores").hidden = shown > 0;
     grid.hidden = shown === 0;
+    $$("fieldset[data-group]").forEach((f) => f.classList.toggle("has", !!checked(f.dataset.group!).length));
     writeUrl();
+    ScrollTrigger.refresh();
   }
 
   form.addEventListener("input", apply);
@@ -215,13 +223,25 @@ const countBand  = (b: string) => SHOPS.filter((s) => bandOf(s.budget) === b).le
   sort.addEventListener("change", apply);
   addEventListener("popstate", () => { readUrl(); apply(); });
 
+  $$("[data-clear]").forEach((btn) => btn.addEventListener("click", () => {
+    $$<HTMLInputElement>(`input[name="${btn.dataset.clear}"]`).forEach((i) => { i.checked = false; });
+    apply();
+  }));
+
+  // 「/」でキーワード欄へ
+  addEventListener("keydown", (e) => {
+    if (e.key === "/" && document.activeElement !== q && !(e.target as HTMLElement).closest("input,select,textarea")) {
+      e.preventDefault(); q.focus();
+    }
+  });
+
   $("#reset").addEventListener("click", (e) => {
     e.preventDefault();
     form.reset();
     $$<HTMLInputElement>('input[name="score"]')[0]!.checked = true;
     sort.value = "score";
     apply();
-    if (!reduce) scrollTo({ top: 0, behavior: "smooth" });
+    scrollToEl(0);
   });
 
   readUrl();

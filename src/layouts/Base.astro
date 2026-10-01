@@ -1,60 +1,81 @@
 ---
+import "@fontsource/shippori-mincho-b1/700.css";
+import "@fontsource/shippori-mincho-b1/800.css";
+import "@fontsource/zen-kaku-gothic-new/400.css";
+import "@fontsource/zen-kaku-gothic-new/500.css";
+import "@fontsource/zen-kaku-gothic-new/700.css";
+import "@fontsource/instrument-serif/400.css";
+import "@fontsource/instrument-serif/400-italic.css";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
 import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
-import SocialRail from "../components/SocialRail.astro";
+import ShopSheet from "../components/ShopSheet.astro";
 
 interface Props {
   title: string;
   description?: string;
   current?: "home" | "search" | "map";
+  /** 地図ページのようにフッターを出さない画面用 */
+  bare?: boolean;
 }
 
 const {
   title,
   description = "実際に通って、また行きたくなった店だけ。ジャンルとエリアで絞り込めます。",
   current,
+  bare = false,
 } = Astro.props;
 ---
 
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-page={current}>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#F2EDE4" />
   <title>{title}</title>
   <meta name="description" content={description} />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <meta property="og:type" content="website" />
   <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Caveat:wght@700&family=Montserrat:wght@600;700;800&display=swap"
-    rel="stylesheet"
-  />
+  <link rel="icon" href={`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="4" y="4" width="56" height="56" rx="12" fill="#D23C25"/><text x="32" y="45" font-size="36" text-anchor="middle" fill="#FAF7F1" font-family="serif" font-weight="700">旨</text></svg>')}`} />
+  <script is:inline>
+    // 描画前にモーション可否・初回訪問を判定して、ちらつきを防ぐ
+    (function () {
+      var d = document.documentElement;
+      d.classList.add("js");
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) d.classList.add("rm");
+      try { if (sessionStorage.getItem("umai:intro")) d.classList.add("seen"); } catch (e) { d.classList.add("seen"); }
+    })();
+  </script>
 </head>
 <body>
-  <SocialRail />
+  <a class="skip" href="#main">本文へ移動</a>
   <Header current={current} />
   <slot />
-  <Footer />
+  {!bare && <Footer />}
+  <ShopSheet />
+
+  <!-- 朱印のかすれ（ロゴとハンコに使う） -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="stamp" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="4" result="n" />
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" result="d" />
+      <feTurbulence type="fractalNoise" baseFrequency=".5" numOctaves="2" seed="11" result="w" />
+      <feColorMatrix in="w" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -7 5.1" result="wm" />
+      <feComposite in="d" in2="wm" operator="in" />
+    </filter>
+  </svg>
+  <div class="grain" aria-hidden="true"></div>
 
   <script>
-    // ヘッダーの影とスクロール連動の出現アニメーション（全ページ共通）
-    const bar = document.querySelector("header.bar")!;
-    const onScroll = () => bar.classList.toggle("stuck", scrollY > 8);
-    addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-
-    const io = new IntersectionObserver(
-      (es) => es.forEach((e) => {
-        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
-      }),
-      { threshold: 0.12, rootMargin: "0px 0px -40px" },
-    );
-    document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+    import { initMotion } from "../scripts/motion";
+    import { initSheet } from "../scripts/sheet";
+    initMotion();
+    initSheet();
   </script>
 </body>
 </html>

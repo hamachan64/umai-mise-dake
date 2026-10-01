@@ -1,16 +1,34 @@
 ---
-import Drop from "./Drop.astro";
 import { url } from "../lib/url";
+import { SHOPS, GENRE_LIST, AREA_LIST } from "../data/shops";
 
 const updated = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit" })
   .replace(/\//g, ".").replace(/\.$/, "");
+const word = [..."うまい店だけ。"];
 ---
-<footer>
-  <div class="wrap">
-    <span class="fl">
-      <Drop width={26} />
-      <span><b><a href={url()} style="text-decoration:none">うまい店だけ。</a></b>　個人が食べて回った記録です。</span>
-    </span>
-    <span class="fr">LAST UPDATED {updated}</span>
+<footer class="ft">
+  <div class="shell">
+    <div class="ft-top">
+      <p class="ft-lead">個人が食べて回った記録です。<br />お店への問い合わせは、各店へ直接どうぞ。</p>
+      <nav class="ft-nav" aria-label="フッター">
+        <a href={url()}><span class="mono">01</span>目録</a>
+        <a href={url("search")}><span class="mono">02</span>検索</a>
+        <a href={url("map")}><span class="mono">03</span>地図</a>
+      </nav>
+      <dl class="ft-data mono">
+        <div><dt>Shops</dt><dd>{SHOPS.length}</dd></div>
+        <div><dt>Genres</dt><dd>{GENRE_LIST.length}</dd></div>
+        <div><dt>Areas</dt><dd>{AREA_LIST.length}</dd></div>
+        <div><dt>Updated</dt><dd>{updated}</dd></div>
+      </dl>
+    </div>
+    <p class="ft-word" aria-label="うまい店だけ。" data-footword>
+      {word.map((c) => <span aria-hidden="true">{c}</span>)}
+    </p>
+    <div class="ft-bottom mono">
+      <span>© {new Date().getFullYear()} Umai Mise Dake</span>
+      <span>Tokyo, Japan</span>
+      <a href="#top" data-totop>Back to top ↑</a>
+    </div>
   </div>
 </footer>

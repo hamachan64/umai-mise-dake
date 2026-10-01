@@ -1,0 +1,36 @@
+---
+/** 壁の品書き。居酒屋の短冊メニューのように全店を吊るして流す */
+import { SHOPS, kanjiOf, toneOf, kansuji } from "../data/shops";
+const strips = SHOPS.map((s) => ({
+  id: s.id, name: s.name, k: kanjiOf(s.genre), tone: toneOf(s.genre),
+  price: kansuji(s.budget), hot: s.score === 5,
+}));
+---
+<section class="wall" aria-labelledby="wallTitle">
+  <div class="shell wall-head">
+    <p class="mono eyebrow" data-fade><span class="dot"></span>壁の品書き<span class="dim">— The wall, {SHOPS.length} tags</span></p>
+    <h2 id="wallTitle" class="wall-title" data-lines>
+      <span class="ln"><span class="ln-i">通った店を、</span></span>
+      <span class="ln"><span class="ln-i">一枚ずつ壁に貼っていく。</span></span>
+    </h2>
+    <p class="wall-note mono" data-fade="0.2">朱色の札は ★5 の店 ／ 札をクリックで詳細</p>
+  </div>
+  <div class="wall-stage" id="wall" aria-hidden="true">
+    <div class="wall-rail" aria-hidden="true"></div>
+    <div class="wall-track" id="wallTrack">
+      {[0, 1].map(() => (
+        <ul class="wall-set">
+          {strips.map((s, i) => (
+            <li style={`--tone:var(--${s.tone});--f:${(0.65 + ((i * 37) % 11) / 20).toFixed(2)};--sway:${(5 + ((i * 13) % 7) * 0.6).toFixed(1)}s;--dl:${(-((i * 7) % 9) * 0.5).toFixed(1)}s`}>
+              <button type="button" class:list={["tag", { hot: s.hot }]} data-shop={s.id} tabindex="-1">
+                <span class="tag-k">{s.k}</span>
+                <span class="tag-name">{s.name}</span>
+                <span class="tag-price">{s.price}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ))}
+    </div>
+  </div>
+</section>
