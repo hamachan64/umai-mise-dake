@@ -523,24 +523,36 @@ a:hover .roll::after, button:hover .roll::after{ transform:translateY(-100%) }
 .row-arrow{ width:24px; height:24px; color:var(--ink-3); transition:transform .7s var(--ease), color .4s }
 .row:hover .row-arrow{ transform:translateX(4px); color:var(--shu) }
 
+/* 推し度の呼び名。激推しは朱の判子、推しは朱文字、それ以外は墨 */
+.sl{
+  display:inline-flex; align-items:center; height:20px; padding:0 7px;
+  font-family:var(--mincho); font-weight:800; font-size:12.5px; line-height:1; letter-spacing:.06em; white-space:nowrap;
+  color:var(--ink-2); border:1px solid var(--rule);
+}
+.sl-5{ background:var(--shu); border-color:var(--shu); color:var(--paper-hi) }
+.sl-4{ color:var(--shu); border-color:currentColor }
+.row-score{ display:flex; flex-direction:column; align-items:flex-start; gap:4px }
+.row-score .mono{ font-size:10px; color:var(--ink-3) }
+.row-sub .sl{ height:17px; padding:0 5px; font-size:11px; margin-right:8px; vertical-align:1px }
+.sheet-spec dd .sl{ height:24px; font-size:14px; padding:0 9px }
 .dots{ display:inline-flex; gap:4px }
 .dots i{ width:8px; height:8px; border:1px solid var(--ink-3); border-radius:50% }
 .dots i.on{ background:var(--shu); border-color:var(--shu) }
 
 .row.compact{ grid-template-columns:44px minmax(0,1fr) 24px; padding-block:14px }
 .row.compact .glyph{ width:44px; height:44px; font-size:22px }
-.row.compact :is(.row-no,.row-genre,.row-area,.row-budget,.dots){ display:none }
+.row.compact :is(.row-no,.row-genre,.row-area,.row-budget,.row-score){ display:none }
 .row.compact .row-sub{ display:block }
 .row.compact .row-title{ font-size:17px }
 
 @media (max-width: 1100px){
-  .row{ grid-template-columns:44px 48px minmax(0,1fr) minmax(0,160px) 84px 24px }
-  .row-genre,.dots{ display:none }
+  .row{ grid-template-columns:44px 48px minmax(0,1fr) minmax(0,150px) 80px 64px 24px }
+  .row-genre{ display:none }
   .glyph{ width:48px; height:48px; font-size:25px }
 }
 @media (max-width: 720px){
   .row{ grid-template-columns:44px minmax(0,1fr) 20px; gap:14px; padding-block:16px }
-  .row :is(.row-no,.row-genre,.row-area,.row-budget,.dots){ display:none }
+  .row :is(.row-no,.row-genre,.row-area,.row-budget,.row-score){ display:none }
   .glyph{ width:44px; height:44px; font-size:22px }
   .row-sub{ display:block }
   .row-title{ font-size:17px; white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical }

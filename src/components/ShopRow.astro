@@ -1,6 +1,6 @@
 ---
 import { url } from "../lib/url";
-import { kanjiOf, toneOf, onomaOf, yen, bandOf, noOf, type Shop } from "../data/shops";
+import { kanjiOf, toneOf, onomaOf, yen, bandOf, noOf, scoreLabel, SCORE_MAX, type Shop } from "../data/shops";
 
 interface Props { shop: Shop; compact?: boolean; hidden?: boolean }
 const { shop: s, compact = false, hidden = false } = Astro.props;
@@ -28,6 +28,7 @@ const tone = toneOf(s.genre);
   data-onoma={onomaOf(s.genre)}
   data-dish={s.dish}
   data-no={noOf(s.id)}
+  data-label={`${scoreLabel(s.score)} ${s.score}/${SCORE_MAX}`}
   data-photo={s.photo ? url(s.photo) : undefined}
   style={`--tone:var(--${tone})`}
 >
@@ -35,13 +36,14 @@ const tone = toneOf(s.genre);
   <span class="glyph" aria-hidden="true">{s.photo ? <img src={url(s.photo)} alt="" loading="lazy" /> : kanjiOf(s.genre)}</span>
   <span class="row-name">
     <span class="row-title">{s.name}</span>
-    <span class="row-sub">{s.genre}<i>/</i>{s.area}<i>/</i>{yen(s.budget)}</span>
+    <span class="row-sub"><b class={`sl sl-${s.score}`}>{scoreLabel(s.score)}</b>{s.genre}<i>/</i>{s.area}<i>/</i>{yen(s.budget)}</span>
   </span>
   <span class="row-genre">{s.genre}</span>
   <span class="row-area">{s.area}<small>{s.access}</small></span>
   <span class="row-budget mono">{yen(s.budget)}</span>
-  <span class="dots" aria-label={`推し度 5段階中${s.score}`}>
-    {[1, 2, 3, 4, 5].map((i) => <i class={i <= s.score ? "on" : ""}></i>)}
+  <span class="row-score" aria-label={`推し度 ${scoreLabel(s.score)}（${SCORE_MAX}段階中${s.score}）`}>
+    <b class={`sl sl-${s.score}`}>{scoreLabel(s.score)}</b>
+    <span class="mono">{s.score}/{SCORE_MAX}</span>
   </span>
   <span class="row-arrow" aria-hidden="true">
     <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.4" /></svg>

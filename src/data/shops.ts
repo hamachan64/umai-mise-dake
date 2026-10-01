@@ -48,19 +48,6 @@ export const GENRES = {
 } as const;
 
 export const SHOPS: Shop[] = [
-  { id:"marutama",   name:"焼肉 まる玉",       yomi:"MARUTAMA",   genre:"焼肉"        , area:"新橋",   access:"新橋駅 烏森口 3分",  budget:5000,  dish:"上ミノとハラミ",     score:5, lat:35.6659, lng:139.7562, photo:"", memo:"ミノのゴリッとした食感が忘れられず月イチで通っています。換気の悪さすら味のうち。" },
-  { id:"ensuke",     name:"ホルモン酒場 炎助",  yomi:"ENSUKE",     genre:"焼肉"        , area:"中目黒", access:"中目黒駅 5分",       budget:4000,  dish:"シマチョウ塩",       score:4, lat:35.6432, lng:139.6988, photo:"", memo:"ひとりでカウンターに座れる焼肉。タレが甘すぎず、ビールが止まりません。" },
-  { id:"tokoshie",   name:"鮨 とこしえ",        yomi:"TOKOSHIE",   genre:"寿司",           area:"銀座",   access:"銀座一丁目駅 2分",   budget:15000, dish:"コハダ",             score:5, lat:35.6737, lng:139.7671, photo:"", memo:"記念日はここ。無言で握ってくれる感じが心地よく、コハダで実力がわかります。" },
-  { id:"yagura",     name:"立ち食い鮨 やぐら",  yomi:"YAGURA",     genre:"寿司",           area:"新宿",   access:"新宿三丁目駅 4分",   budget:3000,  dish:"日替わり5貫",        score:4, lat:35.6912, lng:139.7061, photo:"", memo:"20分で満足して帰れる寿司。この価格でネタの鮮度がおかしい。" },
-  { id:"kido",       name:"中華そば 木戸",      yomi:"KIDO",       genre:"ラーメン",       area:"神保町", access:"神保町駅 A5すぐ",    budget:1200,  dish:"中華そば＋味玉",     score:5, lat:35.6957, lng:139.7574, photo:"", memo:"煮干しの立った清湯。二日酔いの朝でも最後まで飲み干せるやさしさ。" },
-  { id:"todorokiya", name:"らーめん 轟屋",      yomi:"TODOROKIYA", genre:"ラーメン",       area:"吉祥寺", access:"吉祥寺駅 北口 6分",  budget:1300,  dish:"味噌バター",         score:4, lat:35.7047, lng:139.5797, photo:"", memo:"冬に食べたい濃厚味噌。茹で加減を聞いてくれるので必ず固めで。" },
-  { id:"norari",     name:"居酒屋 のらり",      yomi:"NORARI",     genre:"居酒屋",         area:"新宿",   access:"新宿駅 西口 7分",    budget:3500,  dish:"刺身の盛り合わせ",   score:4, lat:35.6923, lng:139.6968, photo:"", memo:"3人以上で行きたい店。日本酒が渋くて、店主に任せると外れません。" },
-  { id:"tomekichi",  name:"大衆酒場 とめ吉",    yomi:"TOMEKICHI",  genre:"居酒屋",         area:"新橋",   access:"新橋駅 2分",         budget:2500,  dish:"煮込み",             score:3, lat:35.6673, lng:139.7590, photo:"", memo:"安い、早い、うるさい。仕事帰りの一杯目にちょうどいい雑さ。" },
-  { id:"hinata",     name:"カリー食堂 ひなた",  yomi:"HINATA",     genre:"カレー",         area:"渋谷",   access:"渋谷駅 8分",         budget:1800,  dish:"2種あいがけ",        score:5, lat:35.6595, lng:139.6990, photo:"", memo:"副菜まで手を抜いてなくて、混ぜるほどおいしくなるタイプのスパイスカレー。" },
-  { id:"ishidatami", name:"欧風カレー 石畳",    yomi:"ISHIDATAMI", genre:"カレー",         area:"神保町", access:"神保町駅 3分",       budget:2000,  dish:"ビーフカレー辛口",   score:4, lat:35.6966, lng:139.7561, photo:"", memo:"神保町らしい古き良き欧風。ルーが重いので昼は軽めにしておくこと。" },
-  { id:"akari",      name:"トラットリア 灯",    yomi:"AKARI",      genre:"イタリアン",     area:"中目黒", access:"中目黒駅 4分",       budget:6000,  dish:"手打ちタリアテッレ", score:5, lat:35.6455, lng:139.6975, photo:"", memo:"デートで失敗しない一軒。パスタは必ず手打ちを頼んでください。" },
-  { id:"yunoma",     name:"喫茶 ゆのま",        yomi:"YUNOMA",     genre:"カフェ・喫茶",   area:"吉祥寺", access:"吉祥寺駅 南口 5分",  budget:1200,  dish:"ブレンドとプリン",   score:4, lat:35.7010, lng:139.5793, photo:"", memo:"昼下がりに本を持っていく店。プリンが固めで、この硬さが好きな人にはたまらない。" },
-
   /* ここから Notion「グルメリスト」DBから /add-shop で反映（2026-09-13、1回目・10件） */
   { id:"uokin",      name:"新橋　魚金",          yomi:"UOKIN",             genre:"居酒屋", area:"新橋",   access:"新橋駅 徒歩1分",         budget:3500, dish:"煮魚",                     score:5, lat:35.665404, lng:139.757359, photo:"", memo:"新橋駅からほぼゼロ距離。煮魚がしっかり脂の乗った身で、瓶ビールが進みすぎて困る一軒。" },
   { id:"popo",       name:"ポポー",              yomi:"POPO",              genre:"パン",   area:"西日暮里", access:"西日暮里駅 徒歩2分",     budget:800,  dish:"ポパイ",                   score:4, lat:35.731601, lng:139.765477, photo:"", memo:"早朝から並ぶサンドイッチ専門店。総菜系のポパイのバランスが良く、午前中には売り切れるので早起きが必須。" },
@@ -213,6 +200,17 @@ export const BUDGET_BANDS = [
   { id: "b3", label: "5,000〜10,000円", min: 5000,  max: 10000 },
   { id: "b4", label: "10,000円〜",      min: 10000, max: Infinity },
 ] as const;
+
+/** 推し度（score）の呼び方。数字だけだと伝わりにくいので言葉を添える */
+export const SCORE_LABEL = {
+  5: "激推し",
+  4: "推し",
+  3: "好き",
+  2: "ふつう",
+  1: "いまいち",
+} as const;
+export const SCORE_MAX = 5;
+export const scoreLabel = (n: number) => SCORE_LABEL[n as keyof typeof SCORE_LABEL] ?? "";
 
 export const yen = (n: number) => "¥" + n.toLocaleString("ja-JP");
 

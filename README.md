@@ -26,12 +26,14 @@ npm run check    # 型チェック
 `npm run check` で落ちます。
 
 ```ts
-{ id:"marutama", name:"焼肉 まる玉", yomi:"MARUTAMA", genre:"焼肉・ホルモン",
+{ id:"marutama", name:"焼肉 まる玉", yomi:"MARUTAMA", genre:"焼肉",
   area:"新橋", access:"新橋駅 烏森口 3分", budget:5000, dish:"上ミノとハラミ",
   score:5, lat:35.6659, lng:139.7562, photo:"", memo:"…" }
 ```
 
 - `budget` は**ひとりあたりの目安（円）を数値で**。表示・並び替え・予算帯の絞り込みに使われます
+- `score` は推し度（1〜5）。画面では言葉と「n/5」で表示されます：
+  5＝激推し ／ 4＝推し ／ 3＝好き ／ 2＝ふつう ／ 1＝いまいち（呼び方は `SCORE_LABEL` で変更可）
 - `lat` / `lng` は地図のピン位置。Googleマップで店を右クリック → いちばん上の座標をコピー
 - `photo` に画像パス（`public/img/…` に置いて `"img/marutama.jpg"`）を入れると
   一覧のサムネイル・カーソルの札・詳細シートが写真に差し替わります。空ならジャンルの漢字
