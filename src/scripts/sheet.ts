@@ -1,5 +1,5 @@
 /* 店の詳細シート。カード・地図・ランダムボタンなど、どこからでも開ける */
-import { SHOPS, GENRES, kanjiOf, toneOf, onomaOf, yen, mapsUrl, noOf, type Shop } from "../data/shops";
+import { SHOPS, GENRES, kanjiOf, toneOf, onomaOf, yen, mapsUrl, noOf, scoreLabel, SCORE_MAX, type Shop } from "../data/shops";
 import { url } from "../lib/url";
 import { gsap, $, $$, lockScroll, reduce, EASE_OUT, EASE_IN } from "./motion";
 
@@ -33,10 +33,12 @@ function fill(s: Shop) {
   set("sDish", s.dish);
   set("sBudget", `${yen(s.budget)} 前後`);
   set("sAccess", s.access);
+  // 値はすべて数字と固定の語なので innerHTML でも安全
   $("#sScore").innerHTML =
-    `<span class="dots" aria-label="5段階中${s.score}">` +
-    [1, 2, 3, 4, 5].map((i) => `<i class="${i <= s.score ? "on" : ""}"></i>`).join("") +
-    `</span><span class="mono">${s.score}.0</span>`;
+    `<b class="sl sl-${s.score}">${scoreLabel(s.score)}</b>` +
+    `<span class="dots" aria-hidden="true">` +
+    Array.from({ length: SCORE_MAX }, (_, i) => `<i class="${i < s.score ? "on" : ""}"></i>`).join("") +
+    `</span><span class="mono">${s.score} / ${SCORE_MAX}</span>`;
   $<HTMLAnchorElement>("#sMap").href = mapsUrl(s);
 
   const i = ctx.indexOf(s.id);

@@ -137,7 +137,7 @@ const N = String(SHOPS.length).padStart(3, "0");
 
       <div class="peek" id="peek" aria-hidden="true">
         <img class="peek-img" id="peekImg" alt="" hidden />
-        <div class="peek-top mono"><span id="peekNo"></span><span>Umai</span></div>
+        <div class="peek-top mono"><span id="peekNo"></span><span id="peekScore"></span></div>
         <span class="peek-k" id="peekK"></span>
         <span class="peek-on" id="peekOn"></span>
         <p class="peek-dish"><span class="mono">これを頼む</span><span id="peekDish"></span></p>
@@ -423,6 +423,7 @@ const N = String(SHOPS.length).padStart(3, "0");
       $("#peekNo").textContent = `No.${d.no}`;
       $("#peekOn").textContent = d.onoma!;
       $("#peekDish").textContent = d.dish!;
+      $("#peekScore").textContent = d.label!;
       const img = $<HTMLImageElement>("#peekImg");
       peek.classList.toggle("has-photo", !!d.photo);
       img.hidden = !d.photo;

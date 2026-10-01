@@ -1,12 +1,13 @@
 ---
 import Base from "../layouts/Base.astro";
 import ShopRow from "../components/ShopRow.astro";
-import { SHOPS, GENRE_LIST, AREA_LIST, BUDGET_BANDS, bandOf, kanjiOf, toneOf } from "../data/shops";
+import { SHOPS, GENRE_LIST, AREA_LIST, BUDGET_BANDS, SCORE_MAX, bandOf, kanjiOf, toneOf, scoreLabel } from "../data/shops";
 import { url } from "../lib/url";
 
 const countGenre = (g: string) => SHOPS.filter((s) => s.genre === g).length;
 const countArea  = (a: string) => SHOPS.filter((s) => s.area === a).length;
 const countBand  = (b: string) => SHOPS.filter((s) => bandOf(s.budget) === b).length;
+const countScore = (min: number) => SHOPS.filter((s) => s.score >= min).length;
 const areas = [...AREA_LIST].sort((a, b) => countArea(b) - countArea(a) || a.localeCompare(b, "ja"));
 ---
 
@@ -73,10 +74,13 @@ const areas = [...AREA_LIST].sort((a, b) => countArea(b) - countArea(a) || a.loc
           <fieldset data-group="score">
             <legend><b>推し度</b><span class="mono">Score</span></legend>
             <div class="opts">
-              {[["0", "すべて"], ["3", "★3以上"], ["4", "★4以上"], ["5", "★5のみ"]].map(([v, l], i) => (
+              {[0, 3, 4, 5].map((v) => (
                 <label class="opt">
-                  <input type="radio" name="score" value={v} checked={i === 0} />
-                  <span>{l}</span>
+                  <input type="radio" name="score" value={String(v)} checked={v === 0} />
+                  <span>
+                    {v === 0 ? "すべて" : v === SCORE_MAX ? `${scoreLabel(v)}だけ` : `${scoreLabel(v)}以上`}
+                    <i>{v ? `${v}/${SCORE_MAX}〜 · ` : ""}{countScore(v)}</i>
+                  </span>
                 </label>
               ))}
             </div>
