@@ -71,8 +71,13 @@ npx wrangler login                      # ブラウザが開くので「許可�
 npx wrangler kv namespace create DRAFTS # 下書き置き場を作る
 ```
 
+   `kv namespace create` では、途中で2つ聞かれます（wranglerのバージョンによる。聞かれなければ無視してよい）
+
+   - `What binding name would you like to use?` → `DRAFTS` と入力する（`wrangler.jsonc` の `binding` と名前を揃える）
+   - `For local dev, do you want to connect to the remote resource instead of a local resource?` → `No`（ローカルで試すときに本番の下書きデータを触らないようにするため）
+
 3. 最後のコマンドの出力にある `"id": "…"` を、`wrangler.jsonc` の `REPLACE_WITH_YOUR_KV_ID` と差し替える
-4. 秘密の値を3つ入れる。コマンドごとに入力を求められるので、メモした値を貼る
+4. 秘密の値を3つ入れる。コマンドごとに `Enter a secret value:` と聞かれるので、メモした値を貼ってEnter（貼っても画面には何も表示されないが、そのままで正常）
 
 ```bash
 npx wrangler secret put LINE_CHANNEL_SECRET        # 2-3 のチャネルシークレット
@@ -80,11 +85,16 @@ npx wrangler secret put LINE_CHANNEL_ACCESS_TOKEN  # 2-4 のチャネルアク�
 npx wrangler secret put GITHUB_TOKEN               # 1-3 の github_pat_…
 ```
 
+   1回目は `There doesn't seem to be a Worker called "umai-mise-dake-line-bot". Do you want to create a new Worker with that name and add secrets to it?` と聞かれる → `Yes`。まだ一度も `deploy` していないので、空のWorkerを先に作ってそこにsecretを入れる、という確認。次の手順5の `deploy` で実際のコードに上書きされる
+
 5. 公開する
 
 ```bash
 npx wrangler deploy
 ```
+
+   初回だけ `Would you like to register a workers.dev subdomain now?` と聞かれる → `Yes`。
+   続けてサブドメイン名を聞かれるので、好きな英数字を入れる（アカウント内で一意であればよく、あとでCloudflareダッシュボードから変更もできる）
 
 出力に `https://umai-mise-dake-line-bot.<あなたの名前>.workers.dev` のような URL が出ます。
 
@@ -107,8 +117,11 @@ npx wrangler secret put ALLOWED_USER_IDS   # 4-4 のユーザーID（複数人�
 
 サイトの店データ（`src/data/shops.json`）が変わるたびに、GitHub Actions が Notion「グルメリスト」へ写します。**正本は GitHub** なので、Notion で直接直した内容は、その店が次に更新されたときに上書きされます。
 
-1. [Notion のインテグレーション](https://www.notion.so/profile/integrations) で **新しいインテグレーション** を作る（種類は「内部」）。表示されるシークレット（`ntn_…`）をメモする
-2. Notion で「グルメリスト」DB を開き、右上 **…** → **接続** → 1 で作ったインテグレーションを追加する
+1. [Notion の開発者ツール](https://www.notion.so/profile/integrations) → **コネクション** → **新規コネクト** で作る
+   - コネクト名：何でもよい（例：`umai-mise-dake`）
+   - 認証方法：**APIトークン**（デフォルトのまま。ワークスペース専用の静的トークンで、旧UIでいう「内部インテグレーション」）
+   - 作成後に表示されるシークレット（`ntn_…`）をメモする
+2. Notion で「グルメリスト」DB を開き、右上 **…** → **接続** → 1 で作ったコネクトを追加する
 3. 同じく **…** → **リンクをコピー** で DB の URL をコピーする
 4. GitHub のリポジトリ → **Settings** → **Secrets and variables** → **Actions** → **New repository secret** で2つ登録する
    - `NOTION_TOKEN`：1 のシークレット
