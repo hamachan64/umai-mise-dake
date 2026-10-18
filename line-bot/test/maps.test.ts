@@ -28,6 +28,12 @@ test("?q=店名, 住所 の形", () => {
   assert.deepEqual(parseMapsUrl(new URL("https://maps.google.com/?q=35.1,139.2")), { lat: 35.1, lng: 139.2 });
 });
 
+test("?q=〒住所 建物名 店名（カンマ無し）は店名を切り出せないので住所扱いにする", () => {
+  const q = "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３ 3A TERRACE BLD 1F かかん 富ヶ谷店";
+  const p = parseMapsUrl(new URL(`https://maps.google.com/?q=${encodeURIComponent(q)}&ftid=0x1:0x2`));
+  assert.deepEqual(p, { address: q });
+});
+
 test("place URL に「店名,住所」が入っていても店名だけを拾う", () => {
   const p = parseMapsUrl(
     new URL("https://www.google.com/maps/place/%E3%83%9D%E3%83%9D%E3%83%BC,+%E6%9D%B1%E4%BA%AC%E9%83%BD%E8%8D%92%E5%B7%9D%E5%8C%BA/@35.7,139.7,17z"),
@@ -46,6 +52,20 @@ test("短縮リンクを辿り、座標が無ければ住所から国土地理�
   assert.equal(p?.lng, 139.7654);
   // 全角数字・全角ハイフンは直し、郵便番号は外して検索する
   assert.equal(new URL(calls.at(-1)!.url).searchParams.get("q"), "東京都荒川区西日暮里5-14");
+});
+
+test("〒住所＋建物名＋店名がカンマ無しで繋がっていても、文面の1行目を店名にして住所から座標を引く", async () => {
+  const addr = "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３ 3A TERRACE BLD 1F かかん 富ヶ谷店";
+  mockFetch([
+    (u) => u.hostname === "maps.app.goo.gl"
+      ? new Response(null, { status: 302, headers: { Location: `https://maps.google.com/?q=${encodeURIComponent(addr)}&ftid=0x1:0x2` } })
+      : undefined,
+    (u) => u.hostname === "msearch.gsi.go.jp" ? json([{ geometry: { coordinates: [139.681, 35.665] } }]) : undefined,
+  ]);
+  const p = await resolvePlace("かかん 富ヶ谷店\nhttps://maps.app.goo.gl/AbC");
+  assert.equal(p?.name, "かかん 富ヶ谷店");
+  assert.equal(p?.lat, 35.665);
+  assert.equal(p?.lng, 139.681);
 });
 
 test("Google 以外への転送は辿らない。そのときは文面の1行目を店名にする", async () => {

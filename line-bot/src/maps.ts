@@ -56,6 +56,9 @@ export function parseMapsUrl(u: URL): Place {
   if (q) {
     const ll = q.match(/^\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*$/);
     if (ll) Object.assign(p, coord(ll[1]!, ll[2]!));
+    // 〒から始まる形式は「住所＋ビル名＋店名」がカンマ無しで繋がっていて店名を切り出せない。
+    // 店名は message の1行目に任せ、ここは住所（geocode の種）としてだけ使う
+    else if (/^〒?\d{3}-?\d{4}/.test(q)) p.address = q.trim();
     else {
       const [head, ...rest] = q.split(/[,，、]\s*/);
       p.name ??= head?.trim();
@@ -118,6 +121,8 @@ export async function resolvePlace(message: string): Promise<Place | null> {
   if (!start) return null;
   const end = await expand(start).catch((e) => { console.error("expand failed", e); return null; });
   const p = end ? parseMapsUrl(end) : {};
+  // 座標が取れない原因調査用（原因が分かったら消す）
+  console.log("resolvePlace", { start: start.href, end: end?.href, name: p.name, address: p.address, lat: p.lat, lng: p.lng });
   // 共有の文面の1行目は店名のことが多いので、URL から取れなかったときの予備にする
   p.name ||= message.split("\n").map((l) => l.trim()).find((l) => l && !/https?:\/\//.test(l));
   if (p.lat === undefined && p.address) Object.assign(p, await geocode(p.address).catch(() => ({})));
