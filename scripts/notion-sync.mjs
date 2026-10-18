@@ -6,6 +6,7 @@
      見つからない列・種類が合わない列は飛ばしてログに出すだけなので、Notion 側を壊しません
    - 店の対応づけは「サイトID」列があればそれで、無ければ店名で行います
    - サイトから消した店は Notion からは消しません（誤操作で消えないように）
+   - 訪問日（visited）はサイトには出さず、Notion にだけ写します。空の店は Notion 側の日付を残します
    - Notion で直接直した内容は、次に同じ店が更新されたときにサイト側の値で上書きされます
 
    手元で試す: NOTION_TOKEN=… NOTION_DATABASE_ID=… DRY_RUN=1 node scripts/notion-sync.mjs
@@ -29,6 +30,7 @@ export const COLUMNS = {
   map:    ["Googleマップ", "地図", "URL"],
   lat:    ["緯度"],
   lng:    ["経度"],
+  visited: ["訪問日", "行った日", "来店日", "日付"],
 };
 
 const NOTION = "https://api.notion.com/v1";
@@ -76,6 +78,7 @@ export function toProp(col, value) {
     case "select":       return col.options.includes(str) ? { select: { name: str } } : undefined;
     case "multi_select": return col.options.includes(str) ? { multi_select: [{ name: str }] } : undefined;
     case "files":     return { files: str ? [{ name: str.split("/").pop().slice(0, 100), type: "external", external: { url: str } }] : [] };
+    case "date":      return /^\d{4}-\d{2}-\d{2}$/.test(str) ? { date: { start: str } } : undefined;
     default:          return undefined;
   }
 }
@@ -90,6 +93,7 @@ export function fromProp(p) {
     case "select": return p.select?.name ?? "";
     case "multi_select": return p.multi_select.map((o) => o.name).join(",");
     case "files": return p.files.map((f) => f.external?.url ?? f.file?.url ?? "").join(",");
+    case "date": return p.date?.start ?? "";
     default: return undefined;
   }
 }
@@ -102,6 +106,8 @@ export function siteValues(shop, siteUrl) {
     photo: shop.photo ? base + shop.photo : "",
     map: "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(`${shop.name} ${shop.area}`),
     lat: shop.lat, lng: shop.lng,
+    // 訪問日が無い店は書かない（Notion に手で入れてある日付を消さないため）
+    visited: shop.visited || undefined,
   };
 }
 
@@ -110,6 +116,7 @@ export function diffProps(cols, shop, page, siteUrl, skipped) {
   const want = siteValues(shop, siteUrl);
   const out = {};
   for (const [field, col] of Object.entries(cols)) {
+    if (want[field] === undefined) continue;
     const prop = toProp(col, want[field]);
     if (!prop) { skipped.add(`${col.name}（${col.type}）`); continue; }
     const now = fromProp(page?.properties?.[col.name]);

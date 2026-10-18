@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { handleEvent, parseBudget } from "../src/flow.ts";
+import { handleEvent, parseBudget, jstDate } from "../src/flow.ts";
 import { fakeEnv, mockFetch, json, replies, sampleJpeg } from "./helpers.ts";
 import type { LineEvent } from "../src/line.ts";
 
@@ -9,7 +9,8 @@ const EXISTING = [{ id: "popo-old", name: "x", yomi: "", genre: "パン", area: 
 
 const msg = (message: object, userId = "U-me"): LineEvent =>
   ({ type: "message", replyToken: "rt", source: { type: "user", userId }, message: { id: "m1", ...message } as LineEvent["message"] });
-const pb = (data: string): LineEvent => ({ type: "postback", replyToken: "rt", source: { type: "user", userId: "U-me" }, postback: { data } });
+const pb = (data: string, date?: string): LineEvent =>
+  ({ type: "postback", replyToken: "rt", source: { type: "user", userId: "U-me" }, postback: { data, ...(date && { params: { date } }) } });
 
 function routes() {
   let treeBody: any, commitBody: any, patched = 0;
@@ -58,6 +59,13 @@ test("共有リンク → ボタンと入力 → 写真 → 投稿 までの一�
   await handleEvent(env, pb("score:4"));
   assert.match(lastReply(r.calls)[0]!.text, /予算/);
   await handleEvent(env, msg({ type: "text", text: "８００円" }));
+  out = lastReply(r.calls);
+  assert.match(out[0]!.text, /いつ行きましたか/);
+  assert.deepEqual(labels(out[0]!), ["今日", "昨日", "日付を選ぶ", "スキップ"]);
+  const picker = out[0]!.quickReply!.items[2]!.action as { type: string; max?: string };
+  assert.equal(picker.type, "datetimepicker");
+  assert.equal(picker.max, jstDate());
+  await handleEvent(env, pb("visited:pick", "2026-10-01"));
   assert.match(lastReply(r.calls)[0]!.text, /一品/);
   await handleEvent(env, msg({ type: "text", text: "ポパイ" }));
   assert.match(lastReply(r.calls)[0]!.text, /メモ/);
@@ -65,7 +73,7 @@ test("共有リンク → ボタンと入力 → 写真 → 投稿 までの一�
   assert.deepEqual(labels(lastReply(r.calls)[0]!), ["写真を選ぶ", "撮る", "写真なし"]);
   await handleEvent(env, msg({ type: "image" }));
   out = lastReply(r.calls);
-  assert.match(out[0]!.text, /店名：ポポー\n場所：西日暮里駅 徒歩3分\nジャンル：パン\n推し度：4 推し\n予算：¥800\n一品：ポパイ\nメモ：—\n写真：あり/);
+  assert.match(out[0]!.text, /店名：ポポー\n場所：西日暮里駅 徒歩3分\nジャンル：パン\n推し度：4 推し\n予算：¥800\n訪問日：2026年10月1日\n一品：ポパイ\nメモ：—\n写真：あり/);
   assert.ok(kv.has("photo:U-me"));
 
   await handleEvent(env, pb("publish"));
@@ -79,6 +87,7 @@ test("共有リンク → ボタンと入力 → 写真 → 投稿 までの一�
   assert.deepEqual({ ...shops[1], id: "" }, {
     id: "", name: "ポポー", yomi: "", genre: "パン", area: "西日暮里", access: "西日暮里駅 徒歩3分", budget: 800,
     dish: "ポパイ", score: 4, lat: 35.731601, lng: 139.765477, photo: `img/${shops[1].id}.jpg`, memo: "",
+    visited: "2026-10-01",
   });
   assert.deepEqual(tree.tree[1], { path: `public/img/${shops[1].id}.jpg`, mode: "100644", type: "blob", sha: "blob1" });
   assert.equal(r.commit().message, "LINEから追加: ポポー");
@@ -156,4 +165,43 @@ test("予算の文字入力", () => {
   assert.equal(parseBudget("¥3000"), 3000);
   assert.equal(parseBudget("安い"), null);
   assert.equal(parseBudget("0"), null);
+});
+
+test("訪問日：今日・昨日は日本時間で、カレンダーの日付は実在して未来でないものだけ。スキップなら項目ごと省く", async () => {
+  const { env, kv } = fakeEnv();
+  const r = routes();
+  const step = () => JSON.parse(kv.get("draft:U-me")!);
+  const toVisited = async () => {
+    await handleEvent(env, msg({ type: "text", text: "https://maps.app.goo.gl/AbC" }));
+    await handleEvent(env, pb("genre:0"));
+    await handleEvent(env, pb("score:5"));
+    await handleEvent(env, pb("budget:1000"));
+    assert.equal(step().step, "visited");
+  };
+
+  await toVisited();
+  for (const bad of ["2026-02-30", "2999-01-01", "2026/10/01", ""]) {
+    await handleEvent(env, pb("visited:pick", bad));
+    assert.equal(step().step, "visited", bad);
+  }
+  await handleEvent(env, pb("visited:1"));
+  assert.equal(step().visited, jstDate(1));
+  assert.equal(step().step, "dish");
+
+  await toVisited();
+  await handleEvent(env, pb("skip"));
+  await handleEvent(env, pb("skip"));
+  await handleEvent(env, pb("skip"));
+  await handleEvent(env, pb("skip"));
+  assert.equal(step().step, "confirm");
+  assert.match(lastReply(r.calls)[0]!.text, /訪問日：—/);
+  await handleEvent(env, pb("publish"));
+  const shops = JSON.parse(r.tree().tree[0].content);
+  assert.equal("visited" in shops.at(-1), false);
+});
+
+test("日本時間の日付", () => {
+  const t = Date.parse("2026-10-18T16:00:00Z"); // 日本時間 19日 1時
+  assert.equal(jstDate(0, t), "2026-10-19");
+  assert.equal(jstDate(1, t), "2026-10-18");
 });

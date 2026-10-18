@@ -18,6 +18,7 @@ npm run dev      # http://localhost:4321/umai-mise-dake
 npm run build    # dist/ に静的書き出し
 npm run preview  # ビルド結果を確認
 npm run check    # 型チェック
+npm test         # Notion 同期スクリプトのテスト
 ```
 
 ## お店を追加・編集する
@@ -39,6 +40,7 @@ npm run check    # 型チェック
 - `lat` / `lng` は地図のピン位置。Googleマップで店を右クリック → いちばん上の座標をコピー
 - `photo` に画像パス（`public/img/…` に置いて `"img/marutama.jpg"`）を入れると
   一覧のサムネイル・カーソルの札・詳細シートが写真に差し替わります。空ならジャンルの漢字
+- `visited` は訪問日（`"2026-10-18"`、省略可）。サイトには出さず、Notion にだけ写します
 - 新しいジャンルは `src/data/choices.ts` の `GENRES` に、絵文字・オノマトペ（`o`）・一文字の漢字（`k`）・
   色（`tone`：`shu` 朱 / `ai` 藍 / `matcha` 抹茶 / `karashi` 芥子）を追加すれば、
   目録のタブ・図鑑・検索・地図の札・LINE Bot のボタンに自動で反映されます

@@ -8,6 +8,7 @@
      いちばん上に出る座標をコピーして貼るのが早いです
    - photo に画像パス（例 "img/marutama.jpg" を public/ に置く）を入れると
      カードのビジュアルが写真に差し替わります。空ならジャンルの漢字
+   - visited は訪問日（"2026-10-18"）。省略可。サイトには出さず Notion にだけ写します
    - ジャンルと推し度の選択肢は choices.ts
    ===================================================================== */
 
@@ -30,6 +31,8 @@ export type Shop = {
   lng: number;
   photo: string;
   memo: string;
+  /** 訪問日（YYYY-MM-DD）。サイトには出さず、Notion への同期だけに使う */
+  visited?: string;
 };
 
 /** JSON は型が緩いので、ビルド時に中身を確かめる。おかしな行があればビルドを止めて公開させない */
@@ -52,6 +55,7 @@ function validate(rows: unknown[]): Shop[] {
       if (typeof s[k] !== "number" || !Number.isFinite(s[k])) fail(`${k} が数値ではありません`);
     }
     if (s.photo && !/^img\/[a-z0-9-]+\.jpg$/.test(s.photo)) fail("photo は img/〇〇.jpg の形で");
+    if (s.visited !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(s.visited)) fail("visited は 2026-10-18 の形で");
     return s;
   });
 }

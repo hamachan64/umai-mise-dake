@@ -1,10 +1,10 @@
 /* LINE での会話の流れ。下書きは KV に置き、1日で自動的に消える
 
-   共有リンク（または位置情報）→ ジャンル → 推し度 → 予算 → 一品 → メモ → 写真 → 確認 → 投稿
+   共有リンク（または位置情報）→ ジャンル → 推し度 → 予算 → 訪問日 → 一品 → メモ → 写真 → 確認 → 投稿
    店名や場所が取れなかったときだけ、そのぶんを途中で聞く */
 
 import { GENRES, SCORE_LABEL } from "../../src/data/choices.ts";
-import { type Env, type LineEvent, type Message, text, button, camera, cameraRoll, location, reply, getContent } from "./line.ts";
+import { type Env, type LineEvent, type Message, text, button, camera, cameraRoll, datePicker, location, reply, getContent } from "./line.ts";
 import { findMapsUrl, nearestStation, resolvePlace } from "./maps.ts";
 import { stripJpegMetadata, toBase64 } from "./jpeg.ts";
 import { publishShop } from "./github.ts";
@@ -14,7 +14,7 @@ const GENRE_NAMES = Object.keys(GENRES) as (keyof typeof GENRES)[];
 const GENRE_PAGE = 11;
 export const BUDGETS = [500, 800, 1000, 1500, 2000, 3000, 4000, 5000, 7000, 10000, 15000, 20000];
 
-const STEPS = ["name", "locate", "genre", "score", "budget", "dish", "memo", "photo", "confirm"] as const;
+const STEPS = ["name", "locate", "genre", "score", "budget", "visited", "dish", "memo", "photo", "confirm"] as const;
 type Step = (typeof STEPS)[number] | "publishing";
 
 export type Draft = {
@@ -27,6 +27,8 @@ export type Draft = {
   genre?: string;
   score?: number;
   budget?: number;
+  /** 訪問日（YYYY-MM-DD）。サイトには出さず Notion にだけ写る */
+  visited: string;
   dish: string;
   memo: string;
   photo: boolean;
@@ -40,6 +42,15 @@ const save = (env: Env, uid: string, d: Draft) => env.DRAFTS.put(draftKey(uid), 
 const clear = (env: Env, uid: string) => Promise.all([env.DRAFTS.delete(draftKey(uid)), env.DRAFTS.delete(photoKey(uid))]);
 
 const yen = (n: number) => "¥" + n.toLocaleString("ja-JP");
+/** 日本時間の日付（YYYY-MM-DD）。daysAgo=1 で昨日 */
+export const jstDate = (daysAgo = 0, now = Date.now()) =>
+  new Date(now + 9 * 3600_000 - daysAgo * 86400_000).toISOString().slice(0, 10);
+/** 実在する日付で、未来でないか（2026-02-30 のような日付は Date が繰り上げてしまうので往復で確かめる） */
+const isDate = (s: string) => {
+  const t = /^\d{4}-\d{2}-\d{2}$/.test(s) ? Date.parse(s) : NaN;
+  return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === s && s <= jstDate();
+};
+const dateLabel = (s: string) => s.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, "$1年$2月$3日");
 const scoreLabel = (n: number) => SCORE_LABEL[n as keyof typeof SCORE_LABEL];
 
 /** 店名・場所は分かっていれば聞かずに飛ばす */
@@ -55,7 +66,7 @@ function begin(d: Draft) {
 }
 
 const newDraft = (name = ""): Draft =>
-  ({ step: "name", name: name.trim().slice(0, 60), area: "", access: "", dish: "", memo: "", photo: false });
+  ({ step: "name", name: name.trim().slice(0, 60), area: "", access: "", visited: "", dish: "", memo: "", photo: false });
 
 async function locate(d: Draft, lat: number, lng: number) {
   d.lat = Math.round(lat * 1e6) / 1e6;
@@ -89,6 +100,7 @@ const summary = (d: Draft) => [
   `ジャンル：${d.genre}`,
   `推し度：${d.score} ${scoreLabel(d.score ?? 0)}`,
   `予算：${yen(d.budget ?? 0)}`,
+  `訪問日：${d.visited ? dateLabel(d.visited) : "—"}`,
   `一品：${d.dish || "—"}`,
   `メモ：${d.memo || "—"}`,
   `写真：${d.photo ? "あり" : "なし"}`,
@@ -113,6 +125,13 @@ export function prompt(d: Draft, page = 0): Message {
       return text("推し度は？", [5, 4, 3, 2, 1].map((n) => button(`${n} ${scoreLabel(n)}`, `score:${n}`)));
     case "budget":
       return text("ひとりあたりの予算は？\n（ボタンにない金額は数字で送ってください）", BUDGETS.map((n) => button(yen(n), `budget:${n}`)));
+    case "visited":
+      return text("いつ行きましたか？（サイトには出ず、Notion にだけ記録されます）", [
+        button("今日", "visited:0"),
+        button("昨日", "visited:1"),
+        datePicker("日付を選ぶ", "visited:pick", jstDate()),
+        button("スキップ", "skip"),
+      ]);
     case "dish":
       return text("おすすめの一品は？（文字で送ってください）", [button("スキップ", "skip")]);
     case "memo":
@@ -157,7 +176,7 @@ export async function handleEvent(env: Env, ev: LineEvent) {
 async function route(env: Env, uid: string, ev: LineEvent, say: Say) {
   if (ev.type === "follow") return say(text(HELP));
   const draft = await load(env, uid);
-  if (ev.type === "postback") return onPostback(env, uid, draft, ev.postback?.data ?? "", say);
+  if (ev.type === "postback") return onPostback(env, uid, draft, ev.postback?.data ?? "", ev.postback?.params?.date, say);
   const m = ev.message;
   if (ev.type !== "message" || !m) return;
   if ("text" in m) return onText(env, uid, draft, m.text, say);
@@ -236,7 +255,7 @@ async function onImage(env: Env, uid: string, draft: Draft | null, messageId: st
   return say(prompt(draft));
 }
 
-async function onPostback(env: Env, uid: string, draft: Draft | null, data: string, say: Say) {
+async function onPostback(env: Env, uid: string, draft: Draft | null, data: string, pickedDate: string | undefined, say: Say) {
   if (data === "cancel") {
     await clear(env, uid);
     return say(text("下書きを消しました。"));
@@ -251,6 +270,9 @@ async function onPostback(env: Env, uid: string, draft: Draft | null, data: stri
   if (key === "genre" && step === "genre" && GENRE_NAMES[n]) draft.genre = GENRE_NAMES[n];
   else if (key === "score" && step === "score" && scoreLabel(n)) draft.score = n;
   else if (key === "budget" && step === "budget" && BUDGETS.includes(n)) draft.budget = n;
+  else if (key === "visited" && step === "visited" && (n === 0 || n === 1)) draft.visited = jstDate(n);
+  else if (key === "visited" && step === "visited" && val === "pick" && pickedDate && isDate(pickedDate)) draft.visited = pickedDate;
+  else if (key === "skip" && step === "visited") draft.visited = "";
   else if (key === "skip" && step === "dish") draft.dish = "";
   else if (key === "skip" && step === "memo") draft.memo = "";
   else if (key === "skip" && step === "photo") {
@@ -282,7 +304,7 @@ async function publish(env: Env, uid: string, d: Draft, say: Say) {
     const photo = d.photo ? await env.DRAFTS.get(photoKey(uid)) : null;
     const shop = await publishShop(env, {
       name: d.name, genre: d.genre, area: d.area, access: d.access, budget: d.budget, dish: d.dish,
-      score: d.score, lat: d.lat, lng: d.lng, memo: d.memo,
+      score: d.score, lat: d.lat, lng: d.lng, memo: d.memo, visited: d.visited ?? "",
     }, photo ?? undefined);
     await clear(env, uid);
     const lost = d.photo && !photo ? "\n（写真は時間が経って消えていたため、なしで投稿しました）" : "";

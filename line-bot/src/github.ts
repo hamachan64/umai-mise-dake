@@ -6,6 +6,7 @@ import type { Env } from "./line.ts";
 export type Shop = {
   id: string; name: string; yomi: string; genre: string; area: string; access: string;
   budget: number; dish: string; score: number; lat: number; lng: number; photo: string; memo: string;
+  visited?: string;
 };
 
 const DATA_PATH = "src/data/shops.json";
@@ -49,7 +50,7 @@ export const makeYomi = (name: string) => {
   return /^[\x20-\x7e]+$/.test(n) ? n.toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim() : "";
 };
 
-export async function publishShop(env: Env, draft: Omit<Shop, "id" | "yomi" | "photo">, photoBase64?: string) {
+export async function publishShop(env: Env, draft: Omit<Shop, "id" | "yomi" | "photo" | "visited"> & { visited: string }, photoBase64?: string) {
   const branch = encodeURIComponent(env.GITHUB_BRANCH);
   const photoBlob = photoBase64
     ? await gh<{ sha: string }>(env, "/git/blobs", { method: "POST", body: JSON.stringify({ content: photoBase64, encoding: "base64" }) })
@@ -68,6 +69,8 @@ export async function publishShop(env: Env, draft: Omit<Shop, "id" | "yomi" | "p
       id, name: draft.name, yomi: makeYomi(draft.name), genre: draft.genre, area: draft.area, access: draft.access,
       budget: draft.budget, dish: draft.dish, score: draft.score, lat: draft.lat, lng: draft.lng,
       photo: photoBlob ? `img/${id}.jpg` : "", memo: draft.memo,
+      // 訪問日は空なら項目ごと省く（既存の店の行と形をそろえる）
+      ...(draft.visited && { visited: draft.visited }),
     };
 
     const tree = await gh<{ sha: string }>(env, "/git/trees", {

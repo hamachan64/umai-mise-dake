@@ -23,14 +23,15 @@ export type LineEvent = {
     | { type: "image"; id: string }
     | { type: "location"; id: string; title?: string; address?: string; latitude: number; longitude: number }
     | { type: string; id: string };
-  postback?: { data: string };
+  postback?: { data: string; params?: { date?: string } };
 };
 
 type Action =
   | { type: "postback"; label: string; data: string; displayText: string }
   | { type: "camera"; label: string }
   | { type: "cameraRoll"; label: string }
-  | { type: "location"; label: string };
+  | { type: "location"; label: string }
+  | { type: "datetimepicker"; label: string; data: string; mode: "date"; initial?: string; max?: string };
 
 export type Message = { type: "text"; text: string; quickReply?: { items: { type: "action"; action: Action }[] } };
 
@@ -48,6 +49,9 @@ export const button = (label: string, data: string, displayText = label): Action
 export const cameraRoll = (label: string): Action => ({ type: "cameraRoll", label });
 export const camera = (label: string): Action => ({ type: "camera", label });
 export const location = (label: string): Action => ({ type: "location", label });
+/** カレンダーから日付を選ぶボタン。選んだ日付は postback の params.date で届く */
+export const datePicker = (label: string, data: string, max?: string): Action =>
+  ({ type: "datetimepicker", label, data, mode: "date", ...(max && { initial: max, max }) });
 
 /** 署名を確かめて、本物の LINE から届いたリクエストかを判定する（比較は定数時間） */
 export async function verifySignature(body: string, signature: string | null, secret: string) {
