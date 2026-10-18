@@ -76,6 +76,23 @@ export function parseMapsUrl(u: URL): Place {
 }
 
 const UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+// LINE などのリンクプレビューと同じく、クローラー向け User-Agent だと
+// Google が店名だけのきれいな og:title（例："かかん 富ヶ谷店 · 渋谷区, 東京都"）を返してくる
+const CRAWLER_UA = "facebookexternalhit/1.1";
+
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'" };
+const decodeEntities = (s: string) => s.replace(/&(amp|lt|gt|quot|#39);/g, (_, e: string) => ENTITIES[e]!);
+
+/** 共有リンクの og:title から店名だけを読む（住所やビル名が混ざらない、最も確実な経路） */
+async function fetchOgTitle(url: URL): Promise<string | undefined> {
+  const res = await fetch(url.href, { headers: { "User-Agent": CRAWLER_UA, "Accept-Language": "ja" } });
+  if (!res.ok) return undefined;
+  const html = await res.text();
+  const m = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"[^>]*>|<meta[^>]*content="([^"]*)"[^>]*property="og:title"[^>]*>/);
+  const raw = m?.[1] ?? m?.[2];
+  // "店名 · 住所" の形で返ってくるので、店名部分だけを使う
+  return raw ? decodeEntities(raw).split(" · ")[0]?.trim() || undefined : undefined;
+}
 
 /** 短縮リンクを Google の外に出ない範囲で辿って、最後の URL を返す */
 async function expand(start: URL): Promise<URL | null> {
@@ -126,9 +143,12 @@ export async function resolvePlace(message: string): Promise<Place | null> {
   if (!start) return null;
   const end = await expand(start).catch((e) => { console.error("expand failed", e); return null; });
   const p = end ? parseMapsUrl(end) : {};
+  // og:title（LINE などのリンクプレビューと同じ経路）が取れれば、URL からの推測より優先する
+  const ogName = await fetchOgTitle(start).catch((e) => { console.error("og:title failed", e); return undefined; });
+  if (ogName) p.name = ogName;
   // 座標が取れない原因調査用（原因が分かったら消す）
-  console.log("resolvePlace", { start: start.href, end: end?.href, name: p.name, address: p.address, lat: p.lat, lng: p.lng });
-  // 共有の文面の1行目は店名のことが多く、URL からの推測（住所やビル名が残ることがある）より確実なので優先する
+  console.log("resolvePlace", { start: start.href, end: end?.href, ogName, name: p.name, address: p.address, lat: p.lat, lng: p.lng });
+  // 共有の文面に店名の行があれば、それが一番確実なので最優先する
   const msgName = message.split("\n").map((l) => l.trim()).find((l) => l && !/https?:\/\//.test(l));
   if (msgName) p.name = msgName;
   if (p.lat === undefined && p.address) Object.assign(p, await geocode(p.address).catch(() => ({})));

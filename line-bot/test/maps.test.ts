@@ -90,13 +90,31 @@ test("〒住所＋店名（ビル名無し）で、共有文面がリンクだ�
   assert.equal(p?.lng, 139.671);
 });
 
+test("og:title（LINE のリンクプレビューと同じ経路）が取れれば、ビル名が混ざらず店名だけを使う", async () => {
+  const addr = "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３ 3A TERRACE BLD 1F かかん 富ヶ谷店";
+  mockFetch([
+    (u, init) => {
+      if (u.hostname !== "maps.app.goo.gl") return undefined;
+      const ua = (init.headers as Record<string, string> | undefined)?.["User-Agent"];
+      if (ua === "facebookexternalhit/1.1") {
+        return new Response('<meta content="かかん 富ヶ谷店 · 渋谷区, 東京都" property="og:title">', { status: 200 });
+      }
+      return new Response(null, { status: 302, headers: { Location: `https://maps.google.com/?q=${encodeURIComponent(addr)}&ftid=0x1:0x2` } });
+    },
+  ]);
+  // メッセージはリンクだけ。URL側はビル名が残る形でも、og:title のおかげできれいな店名になる
+  const p = await resolvePlace("https://maps.app.goo.gl/AbC");
+  assert.equal(p?.name, "かかん 富ヶ谷店");
+});
+
 test("Google 以外への転送は辿らない。そのときは文面の1行目を店名にする", async () => {
   const calls = mockFetch([
     (u) => u.hostname === "maps.app.goo.gl" ? new Response(null, { status: 302, headers: { Location: "https://evil.example/" } }) : undefined,
   ]);
   const p = await resolvePlace("ポポー\nhttps://maps.app.goo.gl/AbC");
   assert.deepEqual(p, { name: "ポポー" });
-  assert.equal(calls.length, 1);
+  // expand() と og:title 取得で、どちらも evil.example には行かず1回ずつで止まる
+  assert.equal(calls.length, 2);
 });
 
 test("同意画面を挟んでも continue の行き先を読む", async () => {
