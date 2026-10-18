@@ -86,10 +86,15 @@ const decodeEntities = (s: string) => s.replace(/&(amp|lt|gt|quot|#39);/g, (_, e
 /** 共有リンクの og:title から店名だけを読む（住所やビル名が混ざらない、最も確実な経路） */
 async function fetchOgTitle(url: URL): Promise<string | undefined> {
   const res = await fetch(url.href, { headers: { "User-Agent": CRAWLER_UA, "Accept-Language": "ja" } });
-  if (!res.ok) return undefined;
+  if (!res.ok) {
+    console.log("fetchOgTitle: not ok", { status: res.status, finalUrl: res.url });
+    return undefined;
+  }
   const html = await res.text();
   const m = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"[^>]*>|<meta[^>]*content="([^"]*)"[^>]*property="og:title"[^>]*>/);
   const raw = m?.[1] ?? m?.[2];
+  // 原因調査用（原因が分かったら消す）
+  console.log("fetchOgTitle", { status: res.status, finalUrl: res.url, htmlLength: html.length, matched: !!m, htmlHead: html.slice(0, 300) });
   // "店名 · 住所" の形で返ってくるので、店名部分だけを使う
   return raw ? decodeEntities(raw).split(" · ")[0]?.trim() || undefined : undefined;
 }
