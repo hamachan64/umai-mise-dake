@@ -101,5 +101,6 @@
   {"id":"shop-20261018-4","name":"魚三酒場 富岡店","yomi":"","genre":"居酒屋","area":"門前仲町","access":"門前仲町駅 徒歩3分","budget":3000,"dish":"刺盛り","score":5,"lat":35.671026,"lng":139.797556,"photo":"img/shop-20261018-4.jpg","memo":"","visited":"2026-10-03"},
   {"id":"shop-20261018-5","name":"エキリーブル","yomi":"","genre":"スイーツ","area":"不動前","access":"不動前駅 徒歩4分","budget":1000,"dish":"ショコラ バナーヌ","score":5,"lat":35.624987,"lng":139.713454,"photo":"img/shop-20261018-5.jpg","memo":"","visited":"2026-10-03"},
   {"id":"shop-20261018-6","name":"中華 味一 目黒","yomi":"","genre":"中華","area":"不動前","access":"不動前駅 徒歩7分","budget":1500,"dish":"背脂炒飯","score":5,"lat":35.629264,"lng":139.711115,"photo":"img/shop-20261018-6.jpg","memo":"","visited":"2026-10-03"},
-  {"id":"pizza-4p-s-tokyo","name":"Pizza 4P's Tokyo","yomi":"PIZZA 4P S TOKYO","genre":"洋食","area":"神谷町","access":"神谷町駅 徒歩4分","budget":4000,"dish":"4P'sシグネチャー ブッラータ、生ハム、ルッコラ since2013","score":5,"lat":35.661583,"lng":139.743539,"photo":"img/pizza-4p-s-tokyo.jpg","memo":"","visited":"2026-09-30"}
+  {"id":"pizza-4p-s-tokyo","name":"Pizza 4P's Tokyo","yomi":"PIZZA 4P S TOKYO","genre":"洋食","area":"神谷町","access":"神谷町駅 徒歩4分","budget":4000,"dish":"4P'sシグネチャー ブッラータ、生ハム、ルッコラ since2013","score":5,"lat":35.661583,"lng":139.743539,"photo":"img/pizza-4p-s-tokyo.jpg","memo":"","visited":"2026-09-30"},
+  {"id":"maren","name":"MAREN 渋谷","yomi":"","genre":"ラーメン","area":"神泉","access":"神泉駅 徒歩4分","budget":1000,"dish":"しょうゆまぜそば","score":3,"lat":35.659393,"lng":139.694305,"photo":"img/maren.jpg","memo":"","visited":"2026-09-19"}
 ]
