@@ -8,6 +8,7 @@ import { type Env, type LineEvent, type Message, text, button, camera, cameraRol
 import { findMapsUrl, nearestStation, resolvePlace } from "./maps.ts";
 import { stripJpegMetadata, toBase64 } from "./jpeg.ts";
 import { publishShop } from "./github.ts";
+import { generateMemo } from "./memo.ts";
 
 const GENRE_NAMES = Object.keys(GENRES) as (keyof typeof GENRES)[];
 /** クイックリプライは1通13個までなので、ジャンルは11個ずつ＋前後ボタンでページを分ける */
@@ -64,6 +65,12 @@ function begin(d: Draft) {
   d.step = "name";
   if (known(d, "name")) advance(d);
 }
+/** 1つ前の手順。店名・場所が自動で分かっていた手順までは戻らない（戻っても聞くことが無いので） */
+function prevStep(d: Draft): Step | null {
+  let i = STEPS.indexOf(d.step as (typeof STEPS)[number]) - 1;
+  while (i >= 0 && known(d, STEPS[i]!)) i--;
+  return i >= 0 ? STEPS[i]! : null;
+}
 
 const newDraft = (name = ""): Draft =>
   ({ step: "name", name: name.trim().slice(0, 60), area: "", access: "", visited: "", dish: "", memo: "", photo: false });
@@ -86,12 +93,12 @@ const HELP = [
   "【使い方】",
   "1. Googleマップで店を開いて「共有」→ このトークに送る",
   "2. ジャンル・推し度・予算をボタンで選ぶ",
-  "3. 一品・メモを入力（スキップ可）",
+  "3. 一品・メモを入力（スキップ可。メモは空欄のままだとAIが考えます）",
   "4. 写真を送る（なしでも可）",
   "5.「投稿する」で、1〜2分後にサイトに反映",
   "",
   "Googleマップのリンクの代わりに、＋ →「位置情報」で店を送っても始められます。",
-  "途中でやめるときは「やめる」と送ってください。",
+  "選び直したいときは「◀ 戻る」、途中でやめるときは「やめる」と送ってください。",
 ].join("\n");
 
 const summary = (d: Draft) => [
@@ -105,6 +112,9 @@ const summary = (d: Draft) => [
   `メモ：${d.memo || "—"}`,
   `写真：${d.photo ? "あり" : "なし"}`,
 ].join("\n");
+
+/** 前の手順に戻れるときだけ付ける「◀ 戻る」ボタン */
+const backBtn = (d: Draft) => (prevStep(d) ? [button("◀ 戻る", "back")] : []);
 
 export function prompt(d: Draft, page = 0): Message {
   switch (d.step) {
@@ -122,25 +132,26 @@ export function prompt(d: Draft, page = 0): Message {
       ]);
     }
     case "score":
-      return text("推し度は？", [5, 4, 3, 2, 1].map((n) => button(`${n} ${scoreLabel(n)}`, `score:${n}`)));
+      return text("推し度は？", [...backBtn(d), ...[5, 4, 3, 2, 1].map((n) => button(`${n} ${scoreLabel(n)}`, `score:${n}`))]);
     case "budget":
-      return text("ひとりあたりの予算は？\n（ボタンにない金額は数字で送ってください）", BUDGETS.map((n) => button(yen(n), `budget:${n}`)));
+      return text("ひとりあたりの予算は？\n（ボタンにない金額は数字で送ってください）", [...backBtn(d), ...BUDGETS.map((n) => button(yen(n), `budget:${n}`))]);
     case "visited":
       return text("いつ行きましたか？（サイトには出ず、Notion にだけ記録されます）", [
+        ...backBtn(d),
         button("今日", "visited:0"),
         button("昨日", "visited:1"),
         datePicker("日付を選ぶ", "visited:pick", jstDate()),
         button("スキップ", "skip"),
       ]);
     case "dish":
-      return text("おすすめの一品は？（文字で送ってください）", [button("スキップ", "skip")]);
+      return text("おすすめの一品は？（文字で送ってください）", [...backBtn(d), button("スキップ", "skip")]);
     case "memo":
-      return text("ひとことメモは？（文字で送ってください）", [button("スキップ", "skip")]);
+      return text("ひとことメモは？（文字で送ってください）", [...backBtn(d), button("スキップ", "skip")]);
     case "photo":
-      return text("写真を1枚送れます。", [cameraRoll("写真を選ぶ"), camera("撮る"), button("写真なし", "skip")]);
+      return text("写真を1枚送れます。", [...backBtn(d), cameraRoll("写真を選ぶ"), camera("撮る"), button("写真なし", "skip")]);
     case "confirm":
       return text(`${summary(d)}\n\nこの内容で投稿しますか？`,
-        [button("投稿する", "publish"), button("選び直す", "redo"), button("やめる", "cancel")]);
+        [button("投稿する", "publish"), button("選び直す", "redo"), ...backBtn(d), button("やめる", "cancel")]);
     case "publishing":
       return text("投稿中です。少し待ってください。");
   }
@@ -266,15 +277,37 @@ async function onPostback(env: Env, uid: string, draft: Draft | null, data: stri
   const [key, val = ""] = data.split(":");
   const n = /^\d+$/.test(val) ? Number(val) : NaN;
   const step = draft.step;
+  if (key === "back") {
+    const p = prevStep(draft);
+    if (!p) return say(text("これより前には戻れません。"), prompt(draft));
+    draft.step = p;
+    await save(env, uid, draft);
+    return say(prompt(draft));
+  }
+  if (key === "skip" && step === "memo") {
+    // 空欄のままにせず、分かっている情報からAIにひとことメモを考えてもらう
+    const memo = await generateMemo(env, { name: draft.name, genre: draft.genre ?? "", dish: draft.dish, area: draft.area, score: draft.score ?? 0 });
+    draft.memo = memo;
+    advance(draft);
+    await save(env, uid, draft);
+    return say(...(memo ? [text(`🤖 メモを考えました：\n${memo}`)] : []), prompt(draft));
+  }
+
+  // note は次の質問の前に一言添える確認。特にカレンダーでの日付選択はLINE側では
+  // 何も表示されないので、ちゃんと記録されたことが分かるようにする
+  let note: string | undefined;
   if (key === "gpage" && step === "genre" && n * GENRE_PAGE < GENRE_NAMES.length) return say(prompt(draft, n));
   if (key === "genre" && step === "genre" && GENRE_NAMES[n]) draft.genre = GENRE_NAMES[n];
   else if (key === "score" && step === "score" && scoreLabel(n)) draft.score = n;
   else if (key === "budget" && step === "budget" && BUDGETS.includes(n)) draft.budget = n;
-  else if (key === "visited" && step === "visited" && (n === 0 || n === 1)) draft.visited = jstDate(n);
-  else if (key === "visited" && step === "visited" && val === "pick" && pickedDate && isDate(pickedDate)) draft.visited = pickedDate;
-  else if (key === "skip" && step === "visited") draft.visited = "";
+  else if (key === "visited" && step === "visited" && (n === 0 || n === 1)) {
+    draft.visited = jstDate(n);
+    note = `🗓 訪問日：${dateLabel(draft.visited)}`;
+  } else if (key === "visited" && step === "visited" && val === "pick" && pickedDate && isDate(pickedDate)) {
+    draft.visited = pickedDate;
+    note = `🗓 訪問日：${dateLabel(draft.visited)}`;
+  } else if (key === "skip" && step === "visited") draft.visited = "";
   else if (key === "skip" && step === "dish") draft.dish = "";
-  else if (key === "skip" && step === "memo") draft.memo = "";
   else if (key === "skip" && step === "photo") {
     draft.photo = false;
     await env.DRAFTS.delete(photoKey(uid));
@@ -288,7 +321,7 @@ async function onPostback(env: Env, uid: string, draft: Draft | null, data: stri
 
   advance(draft);
   await save(env, uid, draft);
-  return say(prompt(draft));
+  return say(...(note ? [text(note)] : []), prompt(draft));
 }
 
 async function publish(env: Env, uid: string, d: Draft, say: Say) {

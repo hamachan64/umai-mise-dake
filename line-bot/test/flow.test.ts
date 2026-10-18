@@ -61,16 +61,19 @@ test("共有リンク → ボタンと入力 → 写真 → 投稿 までの一�
   await handleEvent(env, msg({ type: "text", text: "８００円" }));
   out = lastReply(r.calls);
   assert.match(out[0]!.text, /いつ行きましたか/);
-  assert.deepEqual(labels(out[0]!), ["今日", "昨日", "日付を選ぶ", "スキップ"]);
-  const picker = out[0]!.quickReply!.items[2]!.action as { type: string; max?: string };
+  assert.deepEqual(labels(out[0]!), ["◀ 戻る", "今日", "昨日", "日付を選ぶ", "スキップ"]);
+  const picker = out[0]!.quickReply!.items[3]!.action as { type: string; max?: string };
   assert.equal(picker.type, "datetimepicker");
   assert.equal(picker.max, jstDate());
   await handleEvent(env, pb("visited:pick", "2026-10-01"));
-  assert.match(lastReply(r.calls)[0]!.text, /一品/);
+  // カレンダーでの選択はLINE側に何も表示されないので、記録した日付を一言返す
+  const afterVisited = lastReply(r.calls);
+  assert.match(afterVisited[0]!.text, /🗓 訪問日：2026年10月1日/);
+  assert.match(afterVisited[1]!.text, /一品/);
   await handleEvent(env, msg({ type: "text", text: "ポパイ" }));
   assert.match(lastReply(r.calls)[0]!.text, /メモ/);
   await handleEvent(env, pb("skip"));
-  assert.deepEqual(labels(lastReply(r.calls)[0]!), ["写真を選ぶ", "撮る", "写真なし"]);
+  assert.deepEqual(labels(lastReply(r.calls)[0]!), ["◀ 戻る", "写真を選ぶ", "撮る", "写真なし"]);
   await handleEvent(env, msg({ type: "image" }));
   out = lastReply(r.calls);
   assert.match(out[0]!.text, /店名：ポポー\n場所：西日暮里駅 徒歩3分\nジャンル：パン\n推し度：4 推し\n予算：¥800\n訪問日：2026年10月1日\n一品：ポパイ\nメモ：—\n写真：あり/);
@@ -204,4 +207,76 @@ test("日本時間の日付", () => {
   const t = Date.parse("2026-10-18T16:00:00Z"); // 日本時間 19日 1時
   assert.equal(jstDate(0, t), "2026-10-19");
   assert.equal(jstDate(1, t), "2026-10-18");
+});
+
+test("◀ 戻るで前の手順に戻れる。店名・場所が自動で分かっていた手順より前には戻れない", async () => {
+  const { env, kv } = fakeEnv();
+  const r = routes();
+  const step = () => JSON.parse(kv.get("draft:U-me")!);
+
+  await handleEvent(env, msg({ type: "text", text: "https://maps.app.goo.gl/AbC" }));
+  assert.equal(step().step, "genre"); // 店名・場所は自動で分かっている
+  await handleEvent(env, pb("back"));
+  assert.match(lastReply(r.calls)[0]!.text, /これより前には戻れません/);
+  assert.equal(step().step, "genre"); // 戻れないので変わらない
+
+  await handleEvent(env, pb("genre:0"));
+  assert.equal(step().step, "score");
+  await handleEvent(env, pb("back"));
+  assert.equal(step().step, "genre");
+  assert.equal(lastReply(r.calls)[0]!.text, "ジャンルは？");
+
+  await handleEvent(env, pb("genre:0"));
+  await handleEvent(env, pb("score:4"));
+  assert.equal(step().step, "budget");
+  await handleEvent(env, pb("back"));
+  assert.equal(step().step, "score");
+});
+
+test("メモを空欄のままスキップすると、Workers AI が代わりに考える", async () => {
+  let seenMessages: unknown;
+  const AI = {
+    run: async (model: string, inputs: { messages: unknown }) => {
+      assert.equal(model, "@cf/qwen/qwen3-30b-a3b-fp8");
+      seenMessages = inputs.messages;
+      return { response: "早朝から並ぶサンド屋。ポパイが安定にうまい。" };
+    },
+  } as unknown as Ai;
+  const { env, kv } = fakeEnv({ AI });
+  const r = routes();
+  const step = () => JSON.parse(kv.get("draft:U-me")!);
+
+  await handleEvent(env, msg({ type: "text", text: "https://maps.app.goo.gl/AbC" }));
+  await handleEvent(env, pb("genre:0"));
+  await handleEvent(env, pb("score:4"));
+  await handleEvent(env, pb("budget:800"));
+  await handleEvent(env, pb("skip")); // visited
+  await handleEvent(env, pb("skip")); // dish
+  assert.equal(step().step, "memo");
+
+  await handleEvent(env, pb("skip")); // memo
+  const out = lastReply(r.calls);
+  assert.match(out[0]!.text, /🤖 メモを考えました：\n早朝から並ぶサンド屋。ポパイが安定にうまい。/);
+  assert.match(out[1]!.text, /写真/);
+  assert.equal(step().memo, "早朝から並ぶサンド屋。ポパイが安定にうまい。");
+  assert.equal(step().step, "photo");
+  assert.match(JSON.stringify(seenMessages), /ポポー/);
+});
+
+test("メモ自動生成：Workers AI が失敗しても空欄のまま投稿は止めない", async () => {
+  const AI = { run: async () => { throw new Error("boom"); } } as unknown as Ai;
+  const { env, kv } = fakeEnv({ AI });
+  const r = routes();
+  const step = () => JSON.parse(kv.get("draft:U-me")!);
+
+  await handleEvent(env, msg({ type: "text", text: "https://maps.app.goo.gl/AbC" }));
+  await handleEvent(env, pb("genre:0"));
+  await handleEvent(env, pb("score:4"));
+  await handleEvent(env, pb("budget:800"));
+  await handleEvent(env, pb("skip")); // visited
+  await handleEvent(env, pb("skip")); // dish
+  await handleEvent(env, pb("skip")); // memo
+  assert.equal(step().memo, "");
+  assert.equal(step().step, "photo");
+  assert.match(lastReply(r.calls)[0]!.text, /写真/);
 });

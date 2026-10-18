@@ -11,6 +11,8 @@ export function fakeEnv(over: Partial<Env> = {}) {
     put: async (k: string, v: string) => { kv.set(k, v); },
     delete: async (k: string) => { kv.delete(k); },
   } as unknown as KVNamespace;
+  // デフォルトは何も生成しない。メモ自動生成そのものをテストするときは over.AI で差し替える
+  const AI = { run: async () => ({ response: "" }) } as unknown as Ai;
   const env: Env = {
     DRAFTS,
     LINE_CHANNEL_SECRET: "secret",
@@ -20,6 +22,7 @@ export function fakeEnv(over: Partial<Env> = {}) {
     GITHUB_REPO: "owner/repo",
     GITHUB_BRANCH: "master",
     SITE_URL: "https://example.com/",
+    AI,
     ...over,
   };
   return { env, kv };

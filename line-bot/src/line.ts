@@ -11,6 +11,8 @@ export interface Env {
   GITHUB_REPO: string;
   GITHUB_BRANCH: string;
   SITE_URL: string;
+  /** ひとことメモの自動生成に使う（Workers AI、無料枠） */
+  AI: Ai;
 }
 
 export type LineEvent = {
