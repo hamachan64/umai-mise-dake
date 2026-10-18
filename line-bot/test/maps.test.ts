@@ -28,10 +28,17 @@ test("?q=店名, 住所 の形", () => {
   assert.deepEqual(parseMapsUrl(new URL("https://maps.google.com/?q=35.1,139.2")), { lat: 35.1, lng: 139.2 });
 });
 
-test("?q=〒住所 建物名 店名（カンマ無し）は店名を切り出せないので住所扱いにする", () => {
+test("?q=〒住所 (建物名) 店名（カンマ無し）は番地までを住所、残りを店名の候補にする", () => {
   const q = "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３ 3A TERRACE BLD 1F かかん 富ヶ谷店";
   const p = parseMapsUrl(new URL(`https://maps.google.com/?q=${encodeURIComponent(q)}&ftid=0x1:0x2`));
-  assert.deepEqual(p, { address: q });
+  assert.deepEqual(p, { address: "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３", name: "3A TERRACE BLD 1F かかん 富ヶ谷店" });
+
+  // ビル名が無ければ店名だけがきれいに残る
+  const q2 = "〒176-0006 東京都練馬区栄町４１−７ パーラー 江古田";
+  assert.deepEqual(
+    parseMapsUrl(new URL(`https://maps.google.com/?q=${encodeURIComponent(q2)}`)),
+    { address: "〒176-0006 東京都練馬区栄町４１−７", name: "パーラー 江古田" },
+  );
 });
 
 test("place URL に「店名,住所」が入っていても店名だけを拾う", () => {
@@ -66,6 +73,21 @@ test("〒住所＋建物名＋店名がカンマ無しで繋がっていても�
   assert.equal(p?.name, "かかん 富ヶ谷店");
   assert.equal(p?.lat, 35.665);
   assert.equal(p?.lng, 139.681);
+});
+
+test("〒住所＋店名（ビル名無し）で、共有文面がリンクだけでも店名まで自動で取れる", async () => {
+  const addr = "〒176-0006 東京都練馬区栄町４１−７ パーラー 江古田";
+  mockFetch([
+    (u) => u.hostname === "maps.app.goo.gl"
+      ? new Response(null, { status: 302, headers: { Location: `https://maps.google.com/?q=${encodeURIComponent(addr)}&ftid=0x1:0x2` } })
+      : undefined,
+    (u) => u.hostname === "msearch.gsi.go.jp" ? json([{ geometry: { coordinates: [139.671, 35.74] } }]) : undefined,
+  ]);
+  // メッセージはリンクだけ（店名の行が無い）
+  const p = await resolvePlace("https://maps.app.goo.gl/AbC");
+  assert.equal(p?.name, "パーラー 江古田");
+  assert.equal(p?.lat, 35.74);
+  assert.equal(p?.lng, 139.671);
 });
 
 test("Google 以外への転送は辿らない。そのときは文面の1行目を店名にする", async () => {
