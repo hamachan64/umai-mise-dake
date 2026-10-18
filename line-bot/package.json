@@ -1,0 +1,17 @@
+{
+  "name": "umai-mise-dake-line-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "logs": "wrangler tail",
+    "check": "tsc --noEmit",
+    "test": "node --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261018.1",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.151.1"
+  }
+}

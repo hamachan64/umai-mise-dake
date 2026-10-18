@@ -1,0 +1,35 @@
+name: Sync to Notion
+
+# shops.json（正本）が変わったら Notion「グルメリスト」に写す。
+# Secrets の NOTION_TOKEN / NOTION_DATABASE_ID が未設定のあいだは何もしない
+on:
+  push:
+    branches: [master]
+    paths: [src/data/shops.json]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "お試し（Notion は書き換えず、何をするかだけ表示）"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notion-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/notion-sync.mjs
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}

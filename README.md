@@ -22,30 +22,40 @@ npm run check    # 型チェック
 
 ## お店を追加・編集する
 
-触るのは **`src/data/shops.ts` だけ**です。型が付いているので、ジャンル名を打ち間違えると
-`npm run check` で落ちます。
+**普段は LINE から投稿します。** Googleマップの共有リンクを Bot に送り、ボタンで
+ジャンル・推し度・予算を選ぶだけで、1〜2分後にサイトに反映されます。
+セットアップと使い方は [line-bot/README.md](line-bot/README.md) を見てください。
 
-```ts
-{ id:"marutama", name:"焼肉 まる玉", yomi:"MARUTAMA", genre:"焼肉",
-  area:"新橋", access:"新橋駅 烏森口 3分", budget:5000, dish:"上ミノとハラミ",
-  score:5, lat:35.6659, lng:139.7562, photo:"", memo:"…" }
+手で直すときは **`src/data/shops.json`** を編集します（1店＝1行）。
+ビルド時に中身が検査され、ジャンル名の打ち間違いなどがあればビルドが止まって公開されません。
+
+```json
+{"id":"marutama","name":"焼肉 まる玉","yomi":"MARUTAMA","genre":"焼肉","area":"新橋","access":"新橋駅 烏森口 3分","budget":5000,"dish":"上ミノとハラミ","score":5,"lat":35.6659,"lng":139.7562,"photo":"","memo":"…"}
 ```
 
 - `budget` は**ひとりあたりの目安（円）を数値で**。表示・並び替え・予算帯の絞り込みに使われます
 - `score` は推し度（1〜5）。画面では言葉と「n/5」で表示されます：
-  5＝激推し ／ 4＝推し ／ 3＝好き ／ 2＝ふつう ／ 1＝いまいち（呼び方は `SCORE_LABEL` で変更可）
+  5＝激推し ／ 4＝推し ／ 3＝好き ／ 2＝ふつう ／ 1＝いまいち（呼び方は `src/data/choices.ts` の `SCORE_LABEL` で変更可）
 - `lat` / `lng` は地図のピン位置。Googleマップで店を右クリック → いちばん上の座標をコピー
 - `photo` に画像パス（`public/img/…` に置いて `"img/marutama.jpg"`）を入れると
   一覧のサムネイル・カーソルの札・詳細シートが写真に差し替わります。空ならジャンルの漢字
-- 新しいジャンルは同ファイルの `GENRES` に、絵文字・オノマトペ（`o`）・一文字の漢字（`k`）・
+- 新しいジャンルは `src/data/choices.ts` の `GENRES` に、絵文字・オノマトペ（`o`）・一文字の漢字（`k`）・
   色（`tone`：`shu` 朱 / `ai` 藍 / `matcha` 抹茶 / `karashi` 芥子）を追加すれば、
-  目録のタブ・図鑑・検索・地図の札に自動で反映されます
+  目録のタブ・図鑑・検索・地図の札・LINE Bot のボタンに自動で反映されます
+
+### Notion への反映
+
+`shops.json` が変わるたびに、GitHub Actions（[.github/workflows/notion-sync.yml](.github/workflows/notion-sync.yml)）が
+Notion「グルメリスト」へ写します。**正本は GitHub** で、Notion は一覧として見る用です。
+設定方法は [line-bot/README.md の手順5](line-bot/README.md#5-notion-にも写す任意) を見てください。
 
 ## 構成
 
 ```
 src/
-├── data/shops.ts          ★お店データ（運用中に触るのはここだけ）
+├── data/shops.json        ★お店データ（LINE Bot が追記する。手で直すときもここ）
+├── data/shops.ts          shops.json の読み込みと検査、表示用の関数
+├── data/choices.ts        ジャンルと推し度の選択肢（LINE Bot と共用）
 ├── layouts/Base.astro     ヘッダー/フッター/フォント/詳細シート/共通スクリプト
 ├── components/
 │   ├── Header.astro  Footer.astro  Seal.astro（朱印ロゴ）
@@ -56,6 +66,8 @@ src/
 │   ├── motion.ts          慣性スクロールと出現アニメーションの共通ルール
 │   └── sheet.ts           詳細シートの開閉・前後送り・ランダム
 └── styles/global.css      デザイン
+line-bot/                  LINE から投稿する Bot（Cloudflare Workers）
+scripts/notion-sync.mjs    shops.json → Notion への同期
 ```
 
 **一覧はビルド時にHTMLとして書き出され**、絞り込みは既存DOMの出し入れで行います。

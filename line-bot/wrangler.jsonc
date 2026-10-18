@@ -1,0 +1,20 @@
+{
+  // Cloudflare Workers の設定。セットアップ手順は README.md
+  "name": "umai-mise-dake-line-bot",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true },
+
+  // LINE とのやりとりの途中の下書きを置く場所（1日で自動的に消える）
+  // id は `npx wrangler kv namespace create DRAFTS` の出力に書き換える
+  "kv_namespaces": [
+    { "binding": "DRAFTS", "id": "REPLACE_WITH_YOUR_KV_ID" }
+  ],
+
+  // 秘密ではない設定。秘密の値（トークン類）は `npx wrangler secret put` で入れる
+  "vars": {
+    "GITHUB_REPO": "hamachan64/umai-mise-dake",
+    "GITHUB_BRANCH": "master",
+    "SITE_URL": "https://hamachan64.github.io/umai-mise-dake/"
+  }
+}
