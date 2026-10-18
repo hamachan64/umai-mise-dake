@@ -500,12 +500,16 @@ a:hover .roll::after, button:hover .roll::after{ transform:translateY(-100%) }
 .row:hover::before, .row:focus-visible::before{ transform:none; transform-origin:top }
 .row-no{ color:var(--ink-3) }
 .glyph{
+  position:relative; overflow:hidden;
   width:52px; height:52px; display:grid; place-items:center;
   background:var(--tone); color:var(--paper-hi);
   font-family:var(--mincho); font-weight:800; font-size:27px; line-height:1;
   transition:transform .7s var(--ease), border-radius .7s var(--ease);
 }
-.glyph img{ width:100%; height:100%; object-fit:cover }
+/* position:absolute にするのは、縦長写真だと height:100% が効かず画像の縦横比で
+   高さが決まってしまう（grid item が place-items:center だと伸びない）CSSの癖を避けるため。
+   .peek-img と同じ書き方 */
+.glyph img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover }
 .row:hover .glyph{ transform:rotate(-8deg); border-radius:50% }
 .row-name{ min-width:0; display:flex; flex-direction:column; gap:2px }
 .row-title{
