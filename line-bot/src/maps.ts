@@ -37,7 +37,12 @@ const decode = (s: string) => {
 export function parseMapsUrl(u: URL): Place {
   const p: Place = {};
   const place = u.pathname.match(/\/maps\/place\/([^/]+)/);
-  if (place) p.name = decode(place[1]!);
+  if (place) {
+    // 店名の後ろに「,住所」が続くURLがあるので、?q= と同じく先頭だけを店名にする
+    const [head, ...rest] = decode(place[1]!).split(/[,，、]\s*/);
+    p.name = head?.trim();
+    if (rest.length) p.address = rest.join(" ").trim();
+  }
 
   // data=…!3d緯度!4d経度 が店そのものの座標。@緯度,経度 は画面の中心なので次点
   const pins = [...u.href.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];

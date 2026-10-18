@@ -28,6 +28,13 @@ test("?q=店名, 住所 の形", () => {
   assert.deepEqual(parseMapsUrl(new URL("https://maps.google.com/?q=35.1,139.2")), { lat: 35.1, lng: 139.2 });
 });
 
+test("place URL に「店名,住所」が入っていても店名だけを拾う", () => {
+  const p = parseMapsUrl(
+    new URL("https://www.google.com/maps/place/%E3%83%9D%E3%83%9D%E3%83%BC,+%E6%9D%B1%E4%BA%AC%E9%83%BD%E8%8D%92%E5%B7%9D%E5%8C%BA/@35.7,139.7,17z"),
+  );
+  assert.deepEqual(p, { name: "ポポー", address: "東京都荒川区", lat: 35.7, lng: 139.7 });
+});
+
 test("短縮リンクを辿り、座標が無ければ住所から国土地理院で引く", async () => {
   const calls = mockFetch([
     (u) => u.hostname === "maps.app.goo.gl" ? new Response(null, { status: 302, headers: { Location: "https://maps.google.com/?q=%E3%83%9D%E3%83%9D%E3%83%BC,+%E3%80%92116-0013+%E6%9D%B1%E4%BA%AC%E9%83%BD%E8%8D%92%E5%B7%9D%E5%8C%BA%E8%A5%BF%E6%97%A5%E6%9A%AE%E9%87%8C%EF%BC%95%E2%88%92%EF%BC%91%EF%BC%94&ftid=0x1:0x2" } }) : undefined,
