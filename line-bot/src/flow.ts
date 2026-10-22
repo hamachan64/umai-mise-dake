@@ -118,13 +118,21 @@ const summary = (d: Draft) => [
 /** 前の手順に戻れるときだけ付ける「◀ 戻る」ボタン */
 const backBtn = (d: Draft) => (prevStep(d) ? [button("◀ 戻る", "back")] : []);
 
+/** 店名を空白区切りの単語に分ける（ビル名などを1単語ずつ削るため） */
+const nameWords = (name: string) => name.split(/\s+/).filter(Boolean);
+
 export function prompt(d: Draft, page = 0): Message {
   switch (d.step) {
-    case "name":
-      return d.nameUnconfirmed && d.name
-        ? text(`店名はこれで合っていますか？\n\n「${d.name}」\n\nビル名などが混ざっていることがあります。合っていれば「これでOK」、違っていれば正しい店名を送ってください。`,
-          [button("これでOK", "ok")])
-        : text("店名を送ってください。");
+    case "name": {
+      if (!(d.nameUnconfirmed && d.name)) return text("店名を送ってください。");
+      // ビル名などが前後にくっついているだけのことが多いので、単語ごと削って直せるようにする
+      const words = nameWords(d.name);
+      return text(`店名はこれで合っていますか？\n\n「${d.name}」\n\nビル名などが混ざっていることがあります。前後の単語を削れます。合っていれば「これでOK」、大きく違う場合は正しい店名を送ってください。`, [
+        ...(words.length > 1 ? [button("先頭を削る", "trim:front")] : []),
+        ...(words.length > 1 ? [button("末尾を削る", "trim:back")] : []),
+        button("これでOK", "ok"),
+      ]);
+    }
     case "locate":
       return text(`「${d.name}」の場所が分かりませんでした。\n＋ →「位置情報」から店の場所を送ってください。`,
         [location("位置情報を送る"), button("やめる", "cancel")]);
@@ -288,6 +296,12 @@ async function onPostback(env: Env, uid: string, draft: Draft | null, data: stri
     const p = prevStep(draft);
     if (!p) return say(text("これより前には戻れません。"), prompt(draft));
     draft.step = p;
+    await save(env, uid, draft);
+    return say(prompt(draft));
+  }
+  if (key === "trim" && step === "name" && draft.nameUnconfirmed) {
+    const words = nameWords(draft.name);
+    if (words.length > 1) draft.name = (val === "front" ? words.slice(1) : words.slice(0, -1)).join(" ");
     await save(env, uid, draft);
     return say(prompt(draft));
   }

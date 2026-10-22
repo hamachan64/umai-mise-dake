@@ -300,7 +300,7 @@ test("店名が住所からの推測（ビル名混入の疑い）のときは�
   assert.equal(step().nameUnconfirmed, true);
   assert.match(out.at(-1)!.text, /店名はこれで合っていますか/);
   assert.match(out.at(-1)!.text, /3A TERRACE BLD 1F かかん 富ヶ谷店/);
-  assert.deepEqual(out.at(-1)!.quickReply!.items.map((i) => i.action.label), ["これでOK"]);
+  assert.deepEqual(out.at(-1)!.quickReply!.items.map((i) => i.action.label), ["先頭を削る", "末尾を削る", "これでOK"]);
 
   // 違う店名を送ると、それで確定してジャンルへ進む
   await handleEvent(env, msg({ type: "text", text: "かかん 富ヶ谷店" }));
@@ -326,5 +326,36 @@ test("店名の確認で「これでOK」を押すと、そのままジャンル
   await handleEvent(env, pb("ok"));
   assert.equal(step().name, "パーラー 江古田");
   assert.equal(step().nameUnconfirmed, false);
+  assert.equal(step().step, "genre");
+});
+
+test("店名の確認で「先頭/末尾を削る」を押すと、タイプせず単語単位で直せる", async () => {
+  const { env, kv } = fakeEnv();
+  // ビル名が店名の前につくケース
+  const addr = "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３ 3A TERRACE BLD 1F かかん 富ヶ谷店";
+  mockFetch([
+    (u) => u.hostname === "maps.app.goo.gl"
+      ? new Response(null, { status: 302, headers: { Location: `https://maps.google.com/?q=${encodeURIComponent(addr)}&ftid=0x1:0x2` } })
+      : undefined,
+    (u) => u.hostname === "msearch.gsi.go.jp" ? json([{ geometry: { coordinates: [139.692, 35.666] } }]) : undefined,
+    (u) => u.hostname === "api.line.me" ? json({}) : undefined,
+  ]);
+  const step = () => JSON.parse(kv.get("draft:U-me")!);
+
+  await handleEvent(env, msg({ type: "text", text: "https://maps.app.goo.gl/AbC" }));
+  assert.equal(step().name, "3A TERRACE BLD 1F かかん 富ヶ谷店");
+
+  // 「先頭を削る」を4回押すと、ビル名が全部落ちて正しい店名になる
+  for (let i = 0; i < 4; i++) await handleEvent(env, pb("trim:front"));
+  assert.equal(step().name, "かかん 富ヶ谷店");
+  assert.equal(step().step, "name"); // まだ確定前なので進まない
+  assert.equal(step().nameUnconfirmed, true);
+
+  // 単語が1つだけになったら、それ以上は削れない（ボタンが消える）
+  for (let i = 0; i < 5; i++) await handleEvent(env, pb("trim:back"));
+  assert.equal(step().name, "かかん");
+
+  await handleEvent(env, pb("ok"));
+  assert.equal(step().name, "かかん");
   assert.equal(step().step, "genre");
 });
