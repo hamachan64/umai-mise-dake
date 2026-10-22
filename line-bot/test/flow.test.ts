@@ -280,3 +280,51 @@ test("メモ自動生成：Workers AI が失敗しても空欄のまま投稿は
   assert.equal(step().step, "photo");
   assert.match(lastReply(r.calls)[0]!.text, /写真/);
 });
+
+test("店名が住所からの推測（ビル名混入の疑い）のときは、ジャンルに進まず確認を挟む", async () => {
+  const { env, kv } = fakeEnv();
+  const addr = "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３ 3A TERRACE BLD 1F かかん 富ヶ谷店";
+  const r = mockFetch([
+    (u) => u.hostname === "maps.app.goo.gl"
+      ? new Response(null, { status: 302, headers: { Location: `https://maps.google.com/?q=${encodeURIComponent(addr)}&ftid=0x1:0x2` } })
+      : undefined,
+    (u) => u.hostname === "msearch.gsi.go.jp" ? json([{ geometry: { coordinates: [139.692, 35.666] } }]) : undefined,
+    (u) => u.hostname === "api.line.me" ? json({}) : undefined,
+  ]);
+  const step = () => JSON.parse(kv.get("draft:U-me")!);
+
+  // メッセージはリンクだけ。og:title もモックしていないので失敗する → 確認待ちになる
+  await handleEvent(env, msg({ type: "text", text: "https://maps.app.goo.gl/AbC" }));
+  const out = lastReply(r);
+  assert.equal(step().step, "name");
+  assert.equal(step().nameUnconfirmed, true);
+  assert.match(out.at(-1)!.text, /店名はこれで合っていますか/);
+  assert.match(out.at(-1)!.text, /3A TERRACE BLD 1F かかん 富ヶ谷店/);
+  assert.deepEqual(out.at(-1)!.quickReply!.items.map((i) => i.action.label), ["これでOK"]);
+
+  // 違う店名を送ると、それで確定してジャンルへ進む
+  await handleEvent(env, msg({ type: "text", text: "かかん 富ヶ谷店" }));
+  assert.equal(step().name, "かかん 富ヶ谷店");
+  assert.equal(step().nameUnconfirmed, false);
+  assert.equal(step().step, "genre");
+});
+
+test("店名の確認で「これでOK」を押すと、そのままジャンルへ進む", async () => {
+  const { env, kv } = fakeEnv();
+  const addr = "〒176-0006 東京都練馬区栄町４１−７ パーラー 江古田";
+  mockFetch([
+    (u) => u.hostname === "maps.app.goo.gl"
+      ? new Response(null, { status: 302, headers: { Location: `https://maps.google.com/?q=${encodeURIComponent(addr)}&ftid=0x1:0x2` } })
+      : undefined,
+    (u) => u.hostname === "msearch.gsi.go.jp" ? json([{ geometry: { coordinates: [139.671, 35.74] } }]) : undefined,
+    (u) => u.hostname === "api.line.me" ? json({}) : undefined,
+  ]);
+  const step = () => JSON.parse(kv.get("draft:U-me")!);
+
+  await handleEvent(env, msg({ type: "text", text: "https://maps.app.goo.gl/AbC" }));
+  assert.equal(step().step, "name");
+  await handleEvent(env, pb("ok"));
+  assert.equal(step().name, "パーラー 江古田");
+  assert.equal(step().nameUnconfirmed, false);
+  assert.equal(step().step, "genre");
+});

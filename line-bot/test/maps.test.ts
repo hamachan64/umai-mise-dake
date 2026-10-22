@@ -31,13 +31,13 @@ test("?q=店名, 住所 の形", () => {
 test("?q=〒住所 (建物名) 店名（カンマ無し）は番地までを住所、残りを店名の候補にする", () => {
   const q = "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３ 3A TERRACE BLD 1F かかん 富ヶ谷店";
   const p = parseMapsUrl(new URL(`https://maps.google.com/?q=${encodeURIComponent(q)}&ftid=0x1:0x2`));
-  assert.deepEqual(p, { address: "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３", name: "3A TERRACE BLD 1F かかん 富ヶ谷店" });
+  assert.deepEqual(p, { address: "〒151-0063 東京都渋谷区富ケ谷１丁目１７−３", name: "3A TERRACE BLD 1F かかん 富ヶ谷店", nameUncertain: true });
 
-  // ビル名が無ければ店名だけがきれいに残る
+  // ビル名が無ければ店名だけがきれいに残るが、推測であることに変わりはないので nameUncertain は付く
   const q2 = "〒176-0006 東京都練馬区栄町４１−７ パーラー 江古田";
   assert.deepEqual(
     parseMapsUrl(new URL(`https://maps.google.com/?q=${encodeURIComponent(q2)}`)),
-    { address: "〒176-0006 東京都練馬区栄町４１−７", name: "パーラー 江古田" },
+    { address: "〒176-0006 東京都練馬区栄町４１−７", name: "パーラー 江古田", nameUncertain: true },
   );
 });
 
@@ -73,6 +73,8 @@ test("〒住所＋建物名＋店名がカンマ無しで繋がっていても�
   assert.equal(p?.name, "かかん 富ヶ谷店");
   assert.equal(p?.lat, 35.665);
   assert.equal(p?.lng, 139.681);
+  // message の1行目で上書きできたので、確認待ちにはしない
+  assert.equal(p?.nameUncertain, undefined);
 });
 
 test("〒住所＋店名（ビル名無し）で、共有文面がリンクだけでも店名まで自動で取れる", async () => {
@@ -88,6 +90,8 @@ test("〒住所＋店名（ビル名無し）で、共有文面がリンクだ�
   assert.equal(p?.name, "パーラー 江古田");
   assert.equal(p?.lat, 35.74);
   assert.equal(p?.lng, 139.671);
+  // 店名の行も og:title も無いので、住所からの推測のまま＝確認待ち
+  assert.equal(p?.nameUncertain, true);
 });
 
 test("og:title（LINE のリンクプレビューと同じ経路）が取れれば、ビル名が混ざらず店名だけを使う", async () => {

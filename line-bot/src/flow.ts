@@ -21,6 +21,8 @@ type Step = (typeof STEPS)[number] | "publishing";
 export type Draft = {
   step: Step;
   name: string;
+  /** 店名が住所からの推測（ビル名が混ざることがある）のときだけ true。確認が済むまで name の手順を飛ばさない */
+  nameUnconfirmed?: boolean;
   lat?: number;
   lng?: number;
   area: string;
@@ -54,8 +56,8 @@ const isDate = (s: string) => {
 const dateLabel = (s: string) => s.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, "$1年$2月$3日");
 const scoreLabel = (n: number) => SCORE_LABEL[n as keyof typeof SCORE_LABEL];
 
-/** 店名・場所は分かっていれば聞かずに飛ばす */
-const known = (d: Draft, s: Step) => (s === "name" ? !!d.name : s === "locate" ? d.lat !== undefined : false);
+/** 店名・場所は分かっていれば聞かずに飛ばす。店名が確認待ち（nameUnconfirmed）のときは飛ばさない */
+const known = (d: Draft, s: Step) => (s === "name" ? !!d.name && !d.nameUnconfirmed : s === "locate" ? d.lat !== undefined : false);
 function advance(d: Draft) {
   let i = STEPS.indexOf(d.step as (typeof STEPS)[number]) + 1;
   while (known(d, STEPS[i]!)) i++;
@@ -119,7 +121,10 @@ const backBtn = (d: Draft) => (prevStep(d) ? [button("◀ 戻る", "back")] : []
 export function prompt(d: Draft, page = 0): Message {
   switch (d.step) {
     case "name":
-      return text("店名を送ってください。");
+      return d.nameUnconfirmed && d.name
+        ? text(`店名はこれで合っていますか？\n\n「${d.name}」\n\nビル名などが混ざっていることがあります。合っていれば「これでOK」、違っていれば正しい店名を送ってください。`,
+          [button("これでOK", "ok")])
+        : text("店名を送ってください。");
     case "locate":
       return text(`「${d.name}」の場所が分かりませんでした。\n＋ →「位置情報」から店の場所を送ってください。`,
         [location("位置情報を送る"), button("やめる", "cancel")]);
@@ -207,13 +212,14 @@ async function onText(env: Env, uid: string, draft: Draft | null, raw: string, s
   if (findMapsUrl(t)) {
     const place = await resolvePlace(t);
     const d = newDraft(place?.name);
+    d.nameUnconfirmed = place?.nameUncertain ?? false;
     if (place?.lat !== undefined && place.lng !== undefined) await locate(d, place.lat, place.lng);
     begin(d);
     await env.DRAFTS.delete(photoKey(uid));
     await save(env, uid, d);
     const found = [
       draft ? "（前の下書きは破棄しました）" : "",
-      d.name && `📍 ${d.name}`,
+      d.name && `📍 ${d.name}${d.nameUnconfirmed ? "（要確認）" : ""}`,
       d.lat !== undefined && (d.access || "最寄り駅は見つかりませんでした"),
     ].filter(Boolean).join("\n");
     return say(...(found ? [text(found)] : []), prompt(d));
@@ -223,6 +229,7 @@ async function onText(env: Env, uid: string, draft: Draft | null, raw: string, s
   switch (draft.step) {
     case "name":
       draft.name = t.slice(0, 60);
+      draft.nameUnconfirmed = false;
       break;
     case "budget": {
       const n = parseBudget(t);
@@ -297,7 +304,8 @@ async function onPostback(env: Env, uid: string, draft: Draft | null, data: stri
   // 何も表示されないので、ちゃんと記録されたことが分かるようにする
   let note: string | undefined;
   if (key === "gpage" && step === "genre" && n * GENRE_PAGE < GENRE_NAMES.length) return say(prompt(draft, n));
-  if (key === "genre" && step === "genre" && GENRE_NAMES[n]) draft.genre = GENRE_NAMES[n];
+  if (key === "ok" && step === "name" && draft.nameUnconfirmed) draft.nameUnconfirmed = false;
+  else if (key === "genre" && step === "genre" && GENRE_NAMES[n]) draft.genre = GENRE_NAMES[n];
   else if (key === "score" && step === "score" && scoreLabel(n)) draft.score = n;
   else if (key === "budget" && step === "budget" && BUDGETS.includes(n)) draft.budget = n;
   else if (key === "visited" && step === "visited" && (n === 0 || n === 1)) {
@@ -325,6 +333,12 @@ async function onPostback(env: Env, uid: string, draft: Draft | null, data: stri
 }
 
 async function publish(env: Env, uid: string, d: Draft, say: Say) {
+  // 通常ここに来るまでに name の手順で止まるはずだが、念のための保険
+  if (d.nameUnconfirmed) {
+    d.step = "name";
+    await save(env, uid, d);
+    return say(prompt(d));
+  }
   if (!d.name || d.lat === undefined || d.lng === undefined || !d.genre || !d.score || !d.budget) {
     d.step = "genre";
     await save(env, uid, d);

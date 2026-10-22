@@ -3,7 +3,7 @@
    - 座標が無ければ住所から国土地理院の住所検索で出す
    - 最寄り駅は HeartRails Express */
 
-export type Place = { name?: string; address?: string; lat?: number; lng?: number };
+export type Place = { name?: string; address?: string; lat?: number; lng?: number; nameUncertain?: boolean };
 
 const SHORT_HOSTS = new Set(["maps.app.goo.gl", "goo.gl"]);
 const GOOGLE_HOST = /^(?:www\.|maps\.)?google\.(?:com|co\.jp)$/;
@@ -58,11 +58,12 @@ export function parseMapsUrl(u: URL): Place {
     if (ll) Object.assign(p, coord(ll[1]!, ll[2]!));
     // 〒から始まる形式は「住所＋（ビル名）＋店名」がカンマ無しで繋がっている。
     // 住所は番地（数字-数字）で終わるので、そこまでを住所、残りを店名の候補にする
-    // （ビル名が残って完全ではないことがあるが、message の1行目があればそちらを優先する）
+    // （ビル名が残って完全ではないことがあるので、確実な経路（og:title・message の1行目）が
+    //   無かったときは resolvePlace 側で店名の確認を挟む）
     else if (/^〒?\d{3}-?\d{4}/.test(q)) {
       const m = q.match(/^(.*[\d０-９]+[-−－][\d０-９]+)\s*(\S.*)?$/);
       p.address = (m?.[1] ?? q).trim();
-      if (m?.[2]) p.name = m[2].trim();
+      if (m?.[2]) { p.name = m[2].trim(); p.nameUncertain = true; }
     }
     else {
       const [head, ...rest] = q.split(/[,，、]\s*/);
@@ -149,13 +150,14 @@ export async function resolvePlace(message: string): Promise<Place | null> {
   const end = await expand(start).catch((e) => { console.error("expand failed", e); return null; });
   const p = end ? parseMapsUrl(end) : {};
   // og:title（LINE などのリンクプレビューと同じ経路）が取れれば、URL からの推測より優先する
+  // （Google 側のレート制限などで取れないこともあるので、その保険は nameUncertain に残しておく）
   const ogName = await fetchOgTitle(start).catch((e) => { console.error("og:title failed", e); return undefined; });
-  if (ogName) p.name = ogName;
+  if (ogName) { p.name = ogName; delete p.nameUncertain; }
   // 座標が取れない原因調査用（原因が分かったら消す）
-  console.log("resolvePlace", { start: start.href, end: end?.href, ogName, name: p.name, address: p.address, lat: p.lat, lng: p.lng });
+  console.log("resolvePlace", { start: start.href, end: end?.href, ogName, name: p.name, nameUncertain: p.nameUncertain, address: p.address, lat: p.lat, lng: p.lng });
   // 共有の文面に店名の行があれば、それが一番確実なので最優先する
   const msgName = message.split("\n").map((l) => l.trim()).find((l) => l && !/https?:\/\//.test(l));
-  if (msgName) p.name = msgName;
+  if (msgName) { p.name = msgName; delete p.nameUncertain; }
   if (p.lat === undefined && p.address) Object.assign(p, await geocode(p.address).catch(() => ({})));
   return p;
 }
